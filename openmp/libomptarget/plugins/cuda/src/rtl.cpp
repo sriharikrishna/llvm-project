@@ -380,6 +380,7 @@ class DeviceRTLTy {
     E.Table.EntriesBegin = E.Table.EntriesEnd = nullptr;
   }
 
+public:
   CUstream getStream(const int DeviceId, __tgt_async_info *AsyncInfo) const {
     assert(AsyncInfo && "AsyncInfo is nullptr");
 
@@ -389,7 +390,6 @@ class DeviceRTLTy {
     return reinterpret_cast<CUstream>(AsyncInfo->Queue);
   }
 
-public:
   // This class should not be copied
   DeviceRTLTy(const DeviceRTLTy &) = delete;
   DeviceRTLTy(DeviceRTLTy &&) = delete;
@@ -1050,6 +1050,25 @@ public:
     }
     return (Err == CUDA_SUCCESS) ? OFFLOAD_SUCCESS : OFFLOAD_FAIL;
   }
+
+  int initDeviceInfo(const int DeviceId, __tgt_device_info *DeviceInfo,
+                     const char **errStr) const {
+    assert(DeviceInfo && "DeviceInfo is nullptr");
+
+    if (!DeviceInfo->Context)
+      DeviceInfo->Context = DeviceData[DeviceId].Context;
+    if (!DeviceInfo->Device) {
+      CUdevice Dev;
+      CUresult Err = cuDeviceGet(&Dev, DeviceId);
+      if (Err == CUDA_SUCCESS) {
+        DeviceInfo->Device = reinterpret_cast<void *>(Dev);
+      } else {
+        cuGetErrorString(Err, errStr);
+        return OFFLOAD_FAIL;
+      }
+    }
+    return OFFLOAD_SUCCESS;
+  }
 };
 
 DeviceRTLTy DeviceRTL;
@@ -1251,9 +1270,33 @@ int32_t __tgt_rtl_synchronize(int32_t device_id,
   return DeviceRTL.synchronize(device_id, async_info_ptr);
 }
 
+int32_t __tgt_rtl_release_async_info(int32_t device_id,
+                                     __tgt_async_info *async_info) {
+  assert(DeviceRTL.isValidDeviceId(device_id) && "device_id is invalid");
+  assert(async_info && "async_info is nullptr");
+
+  return DeviceRTL.releaseAsyncInfo(device_id, async_info);
+}
+
+int32_t __tgt_rtl_init_async_info(int32_t device_id, __tgt_async_info **async_info) {
+  assert(DeviceRTL.isValidDeviceId(device_id) && "device_id is invalid");
+  assert(async_info && "async_info is nullptr");
+
+  return DeviceRTL.initAsyncInfo(device_id, async_info);
+}
+
 void __tgt_rtl_set_info_flag(uint32_t NewInfoLevel) {
   std::atomic<uint32_t> &InfoLevel = getInfoLevelInternal();
   InfoLevel.store(NewInfoLevel);
+}
+
+int32_t __tgt_rtl_init_device_info(int32_t device_id,
+                                   __tgt_device_info *device_info_ptr,
+                                   const char **errStr) {
+  assert(DeviceRTL.isValidDeviceId(device_id) && "device_id is invalid");
+  assert(device_info_ptr && "device_info_ptr is nullptr");
+
+  return DeviceRTL.initDeviceInfo(device_id, device_info_ptr, errStr);
 }
 
 #ifdef __cplusplus

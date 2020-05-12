@@ -177,6 +177,11 @@ void RTLsTy::LoadRTLs() {
         dlsym(dynlib_handle, "__tgt_rtl_supports_empty_images");
     *((void **)&R.set_info_flag) =
         dlsym(dynlib_handle, "__tgt_rtl_set_info_flag");
+    *((void **)&R.release_async_info) =
+        dlsym(dynlib_handle, "__tgt_rtl_release_async_info");
+    *((void **)&R.init_async_info) = dlsym(dynlib_handle, "__tgt_rtl_init_async_info");
+    *((void **)&R.init_device_info) = dlsym(dynlib_handle, "__tgt_rtl_init_device_info");
+
   }
 
   DP("RTLs loaded!\n");
