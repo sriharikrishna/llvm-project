@@ -6190,6 +6190,46 @@ void CodeGenFunction::EmitOMPTeamsDistributeParallelForSimdDirective(
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
+void CodeGenFunction::EmitInteropDirective(
+    const OMPInteropDirective &S) {
+  llvm::OpenMPIRBuilder &OMPBuilder = CGM.getOpenMPRuntime().getOMPBuilder();
+  llvm::Value *Device = nullptr;
+  if (const auto *C = S.getSingleClause<OMPDeviceClause>()){
+    Device = EmitScalarExpr(C->getDevice());
+  }
+  llvm::Value * NumDependences = nullptr;
+  llvm::Value *DependenceAddress = nullptr;
+  if (const auto *DC = S.getSingleClause<OMPDependClause>()) {
+    OMPTaskDataTy::DependData Dependencies(DC->getDependencyKind(),
+                                           DC->getModifier());
+    Dependencies.DepExprs.append(DC->varlist_begin(), DC->varlist_end());
+    std::pair<llvm::Value *, Address> DependencePair = CGM.getOpenMPRuntime().getDependenceFromDependClause(
+        *this, Dependencies, DC->getBeginLoc());
+    NumDependences = DependencePair.first;
+    DependenceAddress =
+      Builder.CreatePointerCast(DependencePair.second.getPointer(), CGM.Int8PtrTy);
+  }
+  if (const auto *C = S.getSingleClause<OMPInitClause>()) {
+    llvm::Value *Interopvar = EmitScalarExpr(C->getInteropVar());
+    llvm::ConstantInt* Intval = dyn_cast<llvm::ConstantInt>(EmitScalarExpr(C->getInteropVar()));
+    if (llvm::ConstantInt* CI = dyn_cast<llvm::ConstantInt>(NumDependences)) {
+      std::cout << "NumDependences is a ConstantInt";
+      if (CI->getBitWidth() <= 64) {
+              std::cout << " NumDependences " << CI->getSExtValue() << std::endl;
+      }
+    }
+    llvm::CallInst *CI =
+          OMPBuilder.createOMPInteropInit(Builder,
+                          Interopvar,
+                          C->getIsTarget(),
+                          C->getIsTargetSync(),
+                          Device,
+                          NumDependences,
+                          DependenceAddress);
+    return;
+  }
+}
+
 static void emitTargetTeamsDistributeParallelForRegion(
     CodeGenFunction &CGF, const OMPTargetTeamsDistributeParallelForDirective &S,
     PrePostActionTy &Action) {

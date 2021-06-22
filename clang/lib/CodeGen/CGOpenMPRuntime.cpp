@@ -4833,6 +4833,99 @@ static void emitDepobjElements(CodeGenFunction &CGF, QualType &KmpDependInfoTy,
   }
 }
 
+std::pair<llvm::Value *, Address> CGOpenMPRuntime::getDependenceFromDependClause(
+    CodeGenFunction &CGF, ArrayRef<OMPTaskDataTy::DependData> Dependencies,
+    SourceLocation Loc) {
+  if (llvm::all_of(Dependencies, [](const OMPTaskDataTy::DependData &D) {
+        return D.DepExprs.empty();
+      }))
+    return std::make_pair(nullptr, Address::invalid());
+  // Process list of dependencies.
+  ASTContext &C = CGM.getContext();
+  Address DependenciesArray = Address::invalid();
+  llvm::Value *NumOfElements = nullptr;
+  unsigned NumDependencies = std::accumulate(
+      Dependencies.begin(), Dependencies.end(), 0,
+      [](unsigned V, const OMPTaskDataTy::DependData &D) {
+        return D.DepKind == OMPC_DEPEND_depobj
+                   ? V
+                   : (V + (D.IteratorExpr ? 0 : D.DepExprs.size()));
+      });
+  QualType FlagsTy;
+  getDependTypes(C, KmpDependInfoTy, FlagsTy);
+  bool HasDepobjDeps = false;
+  bool HasRegularWithIterators = false;
+  llvm::Value *NumOfDepobjElements = llvm::ConstantInt::get(CGF.IntPtrTy, 0);
+  llvm::Value *NumOfRegularWithIterators =
+      llvm::ConstantInt::get(CGF.IntPtrTy, 1);
+  // Calculate number of depobj dependecies and regular deps with the iterators.
+  for (const OMPTaskDataTy::DependData &D : Dependencies) {
+    if (D.DepKind == OMPC_DEPEND_depobj) {
+      SmallVector<llvm::Value *, 4> Sizes =
+          emitDepobjElementsSizes(CGF, KmpDependInfoTy, D);
+      for (llvm::Value *Size : Sizes) {
+        NumOfDepobjElements =
+            CGF.Builder.CreateNUWAdd(NumOfDepobjElements, Size);
+      }
+      HasDepobjDeps = true;
+      continue;
+    }
+    // Include number of iterations, if any.
+    if (const auto *IE = cast_or_null<OMPIteratorExpr>(D.IteratorExpr)) {
+      for (unsigned I = 0, E = IE->numOfIterators(); I < E; ++I) {
+        llvm::Value *Sz = CGF.EmitScalarExpr(IE->getHelper(I).Upper);
+        Sz = CGF.Builder.CreateIntCast(Sz, CGF.IntPtrTy, /*isSigned=*/false);
+        NumOfRegularWithIterators =
+            CGF.Builder.CreateNUWMul(NumOfRegularWithIterators, Sz);
+      }
+      HasRegularWithIterators = true;
+      continue;
+    }
+  }
+
+  QualType KmpDependInfoArrayTy;
+  if (HasDepobjDeps || HasRegularWithIterators) {
+    NumOfElements = llvm::ConstantInt::get(CGM.IntPtrTy, NumDependencies,
+                                           /*isSigned=*/false);
+    if (HasDepobjDeps) {
+      NumOfElements =
+          CGF.Builder.CreateNUWAdd(NumOfDepobjElements, NumOfElements);
+    }
+    if (HasRegularWithIterators) {
+      NumOfElements =
+          CGF.Builder.CreateNUWAdd(NumOfRegularWithIterators, NumOfElements);
+    }
+    OpaqueValueExpr OVE(Loc,
+                        C.getIntTypeForBitwidth(/*DestWidth=*/64, /*Signed=*/0),
+                        VK_RValue);
+    CodeGenFunction::OpaqueValueMapping OpaqueMap(CGF, &OVE,
+                                                  RValue::get(NumOfElements));
+    KmpDependInfoArrayTy =
+        C.getVariableArrayType(KmpDependInfoTy, &OVE, ArrayType::Normal,
+                               /*IndexTypeQuals=*/0, SourceRange(Loc, Loc));
+    // CGF.EmitVariablyModifiedType(KmpDependInfoArrayTy);
+    // Properly emit variable-sized array.
+    auto *PD = ImplicitParamDecl::Create(C, KmpDependInfoArrayTy,
+                                         ImplicitParamDecl::Other);
+    CGF.EmitVarDecl(*PD);
+    DependenciesArray = CGF.GetAddrOfLocalVar(PD);
+    NumOfElements = CGF.Builder.CreateIntCast(NumOfElements, CGF.Int32Ty,
+                                              /*isSigned=*/false);
+  } else {
+    KmpDependInfoArrayTy = C.getConstantArrayType(
+        KmpDependInfoTy, llvm::APInt(/*numBits=*/64, NumDependencies), nullptr,
+        ArrayType::Normal, /*IndexTypeQuals=*/0);
+    DependenciesArray =
+        CGF.CreateMemTemp(KmpDependInfoArrayTy, ".dep.arr.addr");
+    DependenciesArray = CGF.Builder.CreateConstArrayGEP(DependenciesArray, 0);
+    NumOfElements = llvm::ConstantInt::get(CGM.Int32Ty, NumDependencies,
+                                           /*isSigned=*/false);
+  }
+  DependenciesArray = CGF.Builder.CreatePointerBitCastOrAddrSpaceCast(
+      DependenciesArray, CGF.VoidPtrTy);
+  return std::make_pair(NumOfElements, DependenciesArray);
+}
+
 std::pair<llvm::Value *, Address> CGOpenMPRuntime::emitDependClause(
     CodeGenFunction &CGF, ArrayRef<OMPTaskDataTy::DependData> Dependencies,
     SourceLocation Loc) {

@@ -2013,6 +2013,24 @@ CallInst *OpenMPIRBuilder::createOMPAlloc(const LocationDescription &Loc,
   return Builder.CreateCall(Fn, Args, Name);
 }
 
+CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc, llvm::Value* Pointer, bool IsTarget, bool IsTargetSync, llvm::Value* Device, llvm::Value* NumDependences, llvm::Value* DependenceAddress){
+  IRBuilder<>::InsertPointGuard IPG(Builder);
+  Builder.restoreIP(Loc.IP);
+
+  Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
+  Value *Ident = getOrCreateIdent(SrcLocStr);
+  Value *ThreadId = getOrCreateThreadID(Ident);
+  //Change to an enum
+  //assert(IsTarget==false);
+  //assert(IsTargetSync==true);
+  ConstantInt *InteropType = ConstantInt::get(M.getContext(), APInt(/*nbits*/64, 2, /*bool*/true));
+  Value *Args[] = {Ident, ThreadId, Pointer, InteropType, /*Device, NumDependences, DependenceAddress*/ /*, llvm::ConstantPointerNull*/};
+
+  Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_interop_init);
+
+  return Builder.CreateCall(Fn, Args);
+}
+
 CallInst *OpenMPIRBuilder::createOMPFree(const LocationDescription &Loc,
                                          Value *Addr, Value *Allocator,
                                          std::string Name) {
