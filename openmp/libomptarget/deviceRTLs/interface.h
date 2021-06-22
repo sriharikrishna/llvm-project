@@ -29,6 +29,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // OpenMP interface
 ////////////////////////////////////////////////////////////////////////////////
+typedef uint32_t omp_lock_t;
 
 typedef uint64_t omp_nest_lock_t; /* arbitrary type of the right length */
 
@@ -217,7 +218,7 @@ typedef int32_t kmp_CriticalName[8];
 ////////////////////////////////////////////////////////////////////////////////
 
 // parallel
-EXTERN int32_t __kmpc_global_thread_num(kmp_Ident *loc);
+//EXTERN int32_t __kmpc_global_thread_num(kmp_Ident *loc);
 EXTERN void __kmpc_push_num_threads(kmp_Ident *loc, int32_t global_tid,
                                     int32_t num_threads);
 EXTERN void __kmpc_serialized_parallel(kmp_Ident *loc, uint32_t global_tid);
@@ -375,9 +376,9 @@ EXTERN void __kmpc_end_critical(kmp_Ident *loc, int32_t global_tid,
 EXTERN void __kmpc_flush(kmp_Ident *loc);
 
 // vote
-EXTERN __kmpc_impl_lanemask_t __kmpc_warp_active_thread_mask();
+//EXTERN __kmpc_impl_lanemask_t __kmpc_warp_active_thread_mask();
 // syncwarp
-EXTERN void __kmpc_syncwarp(__kmpc_impl_lanemask_t);
+//EXTERN void __kmpc_syncwarp(__kmpc_impl_lanemask_t);
 
 // tasks
 EXTERN kmp_TaskDescr *__kmpc_omp_task_alloc(kmp_Ident *loc, uint32_t global_tid,
@@ -396,14 +397,14 @@ EXTERN void __kmpc_omp_task_begin_if0(kmp_Ident *loc, uint32_t global_tid,
                                       kmp_TaskDescr *newLegacyTaskDescr);
 EXTERN void __kmpc_omp_task_complete_if0(kmp_Ident *loc, uint32_t global_tid,
                                          kmp_TaskDescr *newLegacyTaskDescr);
-EXTERN void __kmpc_omp_wait_deps(kmp_Ident *loc, uint32_t global_tid,
-                                 int32_t depNum, void *depList,
-                                 int32_t noAliasDepNum, void *noAliasDepList);
+//EXTERN void __kmpc_omp_wait_deps(kmp_Ident *loc, uint32_t global_tid,
+//                                 int32_t depNum, void *depList,
+//                                 int32_t noAliasDepNum, void *noAliasDepList);
 EXTERN void __kmpc_taskgroup(kmp_Ident *loc, uint32_t global_tid);
 EXTERN void __kmpc_end_taskgroup(kmp_Ident *loc, uint32_t global_tid);
 EXTERN int32_t __kmpc_omp_taskyield(kmp_Ident *loc, uint32_t global_tid,
                                     int end_part);
-EXTERN int32_t __kmpc_omp_taskwait(kmp_Ident *loc, uint32_t global_tid);
+//EXTERN int32_t __kmpc_omp_taskwait(kmp_Ident *loc, uint32_t global_tid);
 EXTERN void __kmpc_taskloop(kmp_Ident *loc, uint32_t global_tid,
                             kmp_TaskDescr *newKmpTaskDescr, int if_val,
                             uint64_t *lb, uint64_t *ub, int64_t st, int nogroup,
