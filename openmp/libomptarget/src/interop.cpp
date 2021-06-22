@@ -9,68 +9,42 @@
 /// TODO: The buildsystem seems to not include the `omp.h` of the current build
 /// but the system `omp.h` :( Also, omp.h has obviously conflicting declarations
 /// with other headers, because, why not.
-//#include "omp.h"
+//#include <omp.h>
+//#include "../../../projects/openmp/runtime/src/omp.h"
+#include "../../../build/runtimes/runtimes-bins/openmp/runtime/src/omp.h"
+//#include "../include/omptarget.h"
+#include "../include/interop.h"
 
 #include "device.h"
 #include "omptargetplugin.h"
 #include "private.h"
 #include "rtl.h"
 //#include "../deviceRTLs/interface.h"
-
+//#include "../../runtime/src/kmp.h"
 #include <cassert>
-
-/// Content that belongs in omp.h
-///{
-/* OpenMP 5.1 Interop API */
-typedef enum omp_interop_property_t {
-  omp_interop_type = -1,
-  omp_interop_type_name = -2,
-  omp_interop_vendor = -3,
-  omp_interop_vendor_name = -4,
-  omp_interop_device_id = -5,
-  omp_interop_device = -6,
-  omp_interop_device_context = -7,
-  omp_interop_tasksync = -8,
-  omp_interop_first = -8
-} omp_interop_property_t;
-
-typedef enum omp_interop_err_t {
-  omp_interop_err_noval = 1,
-  omp_interop_err_success = 0,
-  omp_interop_err_none = -1,
-  omp_interop_err_range = -2,
-  omp_interop_err_result_is_int = -3,
-  omp_interop_err_result_is_str = -4,
-  omp_interop_err_result_is_ptr = -5,
-  omp_interop_err_no_interop = -6,
-  omp_interop_err_failure_str = -7,
-  omp_interop_err_wrong_interop_type = -8,
-  omp_interop_err_unknown = -9,
-} omp_interop_err_t;
-
-typedef struct kmp_tasking_flags { /* Total struct must be exactly 32 bits */
-  /* Compiler flags */ /* Total compiler flags must be 16 bits */
-  unsigned tiedness : 1; /* task is either tied (1) or untied (0) */
-  unsigned final : 1; /* task is final(1) so execute immediately */
+/*
+typedef struct kmp_tasking_flags { //  Total struct must be exactly 32 bits 
+  // Compiler flags  Total compiler flags must be 16 bits 
+  unsigned tiedness : 1; // task is either tied (1) or untied (0) 
+  unsigned final : 1; // task is final(1) so execute immediately 
   unsigned merged_if0 : 1; // no __kmpc_task_{begin/complete}_if0 calls in if0
   unsigned destructors_thunk : 1; // set if the compiler creates a thunk to
   unsigned proxy : 1; // task is a proxy task (it will be executed outside the
   unsigned priority_specified : 1; // set if the compiler provides priority
-  unsigned detachable : 1; // 1 == can detach */
-  unsigned unshackled : 1; /* 1 == unshackled task */
-  unsigned target : 1; /* 1 == target task */
-  unsigned reserved : 7; /* reserved for compiler use */
-  unsigned tasktype : 1; /* task is either explicit(1) or implicit (0) */
+  unsigned detachable : 1; // 1 == can detach 
+  unsigned unshackled : 1; // 1 == unshackled task 
+  unsigned target : 1; // 1 == target task 
+  unsigned reserved : 7; // reserved for compiler use 
+  unsigned tasktype : 1; // task is either explicit(1) or implicit (0) 
   unsigned task_serial : 1; // task is executed immediately (1) or deferred (0)
   unsigned tasking_ser : 1; // all tasks in team are either executed immediately
   unsigned team_serial : 1; // entire team is serial (1) [1 thread] or parallel
-  unsigned started : 1; /* 1==started, 0==not started     */
-  unsigned executing : 1; /* 1==executing, 0==not executing */
-  unsigned complete : 1; /* 1==complete, 0==not complete   */
-  unsigned freed : 1; /* 1==freed, 0==allocated        */
-  unsigned native : 1; /* 1==gcc-compiled task, 0==intel */
-  unsigned reserved31 : 7; /* reserved for library use */
-
+  unsigned started : 1; // 1==started, 0==not started     
+  unsigned executing : 1; // 1==executing, 0==not executing 
+  unsigned complete : 1; // 1==complete, 0==not complete   
+  unsigned freed : 1; // 1==freed, 0==allocated        
+  unsigned native : 1; // 1==gcc-compiled task, 0==intel 
+  unsigned reserved31 : 7; // reserved for library use 
 } kmp_tasking_flags_t;
 
 
@@ -79,12 +53,6 @@ typedef enum omp_interop_backend_type_t {
   omp_interop_backend_type_cuda_1 = 1,
 } omp_interop_backend_type_t;
 
-typedef struct omp_interop_val_t *omp_interop_t;
-constexpr omp_interop_t omp_interop_none = NULL;
-
-///}
-
-// OMP Interop API
 typedef enum kmp_interop_type_t {
   kmp_interop_type_unknown = -1,
   kmp_interop_type_platform,
@@ -109,32 +77,36 @@ typedef struct omp_interop_val_t {
   __tgt_device_info device_info;
   const kmp_interop_type_t interop_type;
   const intptr_t device_id;
-  const intptr_t vendor_id = /* LLVM? */ 1;
+  const intptr_t vendor_id = 1; // LLVM?
   const intptr_t backend_type_id = omp_interop_backend_type_cuda_1;
 } omp_interop_val_t;
 }
-
-static omp_interop_err_t
+*/
+static omp_interop_rc_t
 __kmpc_interop_get_property_err_type(omp_interop_property_t property) {
   switch (property) {
-  case omp_interop_type:
-    return omp_interop_err_result_is_int;
-  case omp_interop_type_name:
-    return omp_interop_err_result_is_str;
-  case omp_interop_vendor:
-    return omp_interop_err_result_is_int;
-  case omp_interop_vendor_name:
-    return omp_interop_err_result_is_str;
-  case omp_interop_device_id:
-    return omp_interop_err_result_is_int;
-  case omp_interop_device:
-    return omp_interop_err_result_is_ptr;
-  case omp_interop_device_context:
-    return omp_interop_err_result_is_ptr;
-  case omp_interop_tasksync:
-    return omp_interop_err_result_is_ptr;
+  case omp_ipr_fr_id:
+    return omp_irc_type_int;
+  case omp_ipr_fr_name:
+    return omp_irc_type_str;
+  case omp_ipr_vendor:
+    return omp_irc_type_int;
+  case omp_ipr_vendor_name:
+    return omp_irc_type_str;
+  case omp_ipr_device_num:
+    return omp_irc_type_int;
+  case omp_ipr_platform:
+    return omp_irc_type_int;
+  case omp_ipr_device:
+    return omp_irc_type_ptr;
+  case omp_ipr_device_context:
+    return omp_irc_type_ptr;
+  case omp_ipr_targetsync:
+    return omp_irc_type_ptr;
+//  case omp_ipr_first:
+//    return omp_irc_type_ptr;
   };
-  return omp_interop_err_unknown;
+  return omp_irc_no_value;
 }
 
 static void __kmpc_interop_type_mismatch(omp_interop_property_t property,
@@ -156,14 +128,20 @@ template <>
 intptr_t __kmpc_interop_get_property<intptr_t>(omp_interop_val_t &interop_val,
                                                omp_interop_property_t property,
                                                int *err) {
+	      
   switch (property) {
-  case omp_interop_type:
+  case omp_ipr_fr_id:
+    //printf("II1");
     return interop_val.backend_type_id;
-  case omp_interop_vendor:
+  case omp_ipr_vendor:
+    //printf("II2");
     return interop_val.vendor_id;
-  case omp_interop_device_id:
+  case omp_ipr_device_num:
+    //printf("II3");
     return interop_val.device_id;
   default:
+    //printf("II4");
+    //printf("Integer property not handled in switch \n");
     ;
     //assert(__kmpc_interop_get_property_err_type(property) !=
                //omp_interop_err_result_is_int &&
@@ -177,10 +155,34 @@ template <>
 const char *__kmpc_interop_get_property<const char *>(
     omp_interop_val_t &interop_val, omp_interop_property_t property, int *err) {
   switch (property) {
-  case omp_interop_type_name:
+  case omp_ipr_fr_id:
+	  //printf("YY fr_id ");
+	  //printf(" \n __kmpc_interop_get_property  case omp_ipr_fr_id \n ");
     return interop_val.interop_type == kmp_interop_type_tasksync ? "tasksync"
                                                                  : "device+context";
-  case omp_interop_vendor_name:
+  case omp_ipr_vendor_name:
+	  //printf("YY vendor_name");
+	  //printf(" \n __kmpc_interop_get_property  case omp_ipr_vendor_name \n ");
+    return __kmpc_interop_vendor_id_to_str(interop_val.vendor_id);
+  default:
+	  //printf("YY not handled");
+    //printf("Const char *not handled in switch \n");
+    __kmpc_interop_type_mismatch(property, err);
+    return nullptr;
+    //assert(__kmpc_interop_get_property_err_type(property) !=
+               //omp_interop_err_result_is_str &&
+           //"String property not handled in switch");
+  }
+}
+/*
+template <>
+const char *__kmpc_interop_get_property<const char *>(
+    omp_interop_val_t &interop_val, omp_interop_property_t property, int *err) {
+  switch (property) {
+  case omp_ipr_fr_id:
+    return interop_val.interop_type == kmp_interop_type_tasksync ? "tasksync"
+                                                                 : "device+context";
+  case omp_ipr_vendor_name:
     return __kmpc_interop_vendor_id_to_str(interop_val.vendor_id);
   default:
     ;
@@ -191,23 +193,31 @@ const char *__kmpc_interop_get_property<const char *>(
   __kmpc_interop_type_mismatch(property, err);
   return nullptr;
 }
-
+*/
 template <>
 void *__kmpc_interop_get_property<void *>(omp_interop_val_t &interop_val,
                                           omp_interop_property_t property,
                                           int *err) {
+  //printf("In __kmpc_interop_get_property \n");
   switch (property) {
-  case omp_interop_device:
+  case omp_ipr_device:
+    //printf("XX device");
     if (interop_val.device_info.Device)
       return interop_val.device_info.Device;
-    *err = omp_interop_err_failure_str;
+    //*err = omp_interop_err_failure_str;
+    *err = omp_irc_no_value;
     return const_cast<char *>(interop_val.err_str);
-  case omp_interop_device_context:
+  case omp_ipr_device_context:
+    //printf("XX device_context");
     return interop_val.device_info.Context;
-  case omp_interop_tasksync:
+  case omp_ipr_targetsync:
+    printf("XX targetsync");
+    if(interop_val.async_info==NULL)
+	    printf("interop_val.async_info==NULL \n");
     return interop_val.async_info->Queue;
   default:
     ;
+    //printf("Pointer property not handled in switch %d \n", property);
     //assert(__kmpc_interop_get_property_err_type(property) !=
                //omp_interop_err_result_is_str &&
            //"Pointer property not handled in switch");
@@ -219,47 +229,80 @@ void *__kmpc_interop_get_property<void *>(omp_interop_val_t &interop_val,
 static bool __kmpc_interop_get_property_check(omp_interop_val_t **interop_ptr,
                                               omp_interop_property_t property,
                                               int *err) {
+  //printf("\n __kmpc_interop_get_property_check() Step1 \n");
   if (err)
-    *err = omp_interop_err_success;
+    *err = omp_irc_success;
+  //printf("\n __kmpc_interop_get_property_check() Step2 \n");
   if (!interop_ptr) {
     if (err)
-      *err = omp_interop_err_no_interop;
+      *err = omp_irc_empty;
     return false;
   }
-  if (property >= 0 || property < omp_interop_first) {
+  //printf("\n __kmpc_interop_get_property_check() Step3 \n");
+  if (property >= 0 || property < omp_ipr_first) {
     if (err)
-      *err = omp_interop_err_range;
+      *err = omp_irc_out_of_range;
     return false;
   }
-  if (property == omp_interop_tasksync &&
+  //printf("\n __kmpc_interop_get_property_check() Step4 \n");
+  if (property == omp_ipr_targetsync &&
       (*interop_ptr)->interop_type != kmp_interop_type_tasksync) {
     if (err)
-      *err = omp_interop_err_wrong_interop_type;
+      *err = omp_irc_other;
+    /*if (property == omp_ipr_targetsync)
+      printf(" returning FALSE property == omp_ipr_targetsync \n");
+    if ((*interop_ptr)->interop_type != kmp_interop_type_tasksync) 
+      printf(" returning FALSE ((*interop_ptr)->interop_type != kmp_interop_type_tasksync) \n");*/
     return false;
   }
-  if ((property == omp_interop_device || property == omp_interop_device_context) &&
+  //printf("\n __kmpc_interop_get_property_check() Step5 \n");
+  if ((property == omp_ipr_device || property == omp_ipr_device_context) &&
       (*interop_ptr)->interop_type == kmp_interop_type_tasksync) {
     if (err)
-      *err = omp_interop_err_wrong_interop_type;
+      *err = omp_irc_other;
     return false;
   }
+  //printf("\n __kmpc_interop_get_property_check() Step6 \n");
   return true;
 }
 
+
 #define __OMP_GET_INTEROP_TY(RETURN_TYPE, SUFFIX)                              \
-  EXTERN RETURN_TYPE omp_get_interop_##SUFFIX(omp_interop_val_t **interop_ptr, \
-                                              omp_interop_property_t property, \
-                                              int *err) {                      \
-    if (!__kmpc_interop_get_property_check(interop_ptr, property, err))        \
+RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
+                                 omp_interop_property_t property_id,           \
+                                 int *err) {                                   \
+    omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
+    assert((interop_val)->interop_type == kmp_interop_type_tasksync);\
+    if (!__kmpc_interop_get_property_check(&interop_val, property_id, err)){    \
+      /*printf("ZZZZZZ");*/	 \
       return (RETURN_TYPE)(0);                                                 \
-    return __kmpc_interop_get_property<RETURN_TYPE>(**interop_ptr, property,   \
+    }\
+    return __kmpc_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
                                                     err);                      \
-  }
+}
 __OMP_GET_INTEROP_TY(intptr_t, int)
 __OMP_GET_INTEROP_TY(void *, ptr)
 __OMP_GET_INTEROP_TY(const char *, str)
 #undef __OMP_GET_INTEROP_TY
 
+
+#define __OMP_GET_INTEROP_TY3(RETURN_TYPE, SUFFIX)                             \
+RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
+                                 omp_interop_property_t property_id) {         \
+    int err;                                                                  \
+    omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
+    if (!__kmpc_interop_get_property_check(&interop_val, property_id, &err)){    \
+      /*printf("YYYYYY");*/	 \
+      return (RETURN_TYPE)(0); \
+    }\
+    return nullptr;\
+    return __kmpc_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
+                                                    &err);                      \
+}
+__OMP_GET_INTEROP_TY3(const char*, name)
+__OMP_GET_INTEROP_TY3(const char*, type_desc)
+__OMP_GET_INTEROP_TY3(const char*, rc_desc)
+#undef __OMP_GET_INTEROP_TY3
 
 typedef int64_t kmp_int64;
 
@@ -270,7 +313,46 @@ int recordEvent(DeviceTy &Device, __tgt_async_info *AsyncInfo);
 int queryAndWait(DeviceTy &Device, __tgt_async_info *AsyncInfo);
 
 extern "C" {
-int __kmpc_set_async_info(void *async_info);
+int __kmpc_set_async_info(kmp_int32 device_id, void *async_info);
+
+//SHK: Copied from https://github.com/llvm/llvm-project/commit/ad95c48783a94b6ba126c2184205086c1ae8dd7c
+int __kmpc_set_async_info(kmp_int32 device_id, void *async_info) {
+   __tgt_async_info * AsyncInfo = (__tgt_async_info *) async_info;
+   //initAsyncInfo(device_id, &AsyncInfo);
+  /*int gtid = __kmp_get_gtid();
+  kmp_info_t *thread = __kmp_threads[gtid];
+  kmp_depnode_t *dep = thread->th.th_current_task->td_depnode;
+  if (!dep)
+    return 0;
+  KMP_ATOMIC_ST_REL(&dep->dn.async_info,
+                    reinterpret_cast<uintptr_t>(async_info));*/
+  return 1;
+}
+/*
+kmp_task_t *__kmpc_omp_task_alloc(ident_t *loc_ref, kmp_int32 gtid,
+                                  kmp_int32 flags, size_t sizeof_kmp_task_t,
+                                  size_t sizeof_shareds,
+                                  kmp_routine_entry_t task_entry) {
+  kmp_task_t *retval;
+  kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *)&flags;
+  __kmp_assert_valid_gtid(gtid);
+  input_flags->native = FALSE;
+  // __kmp_task_alloc() sets up all other runtime flags
+  KA_TRACE(10, ("__kmpc_omp_task_alloc(enter): T#%d loc=%p, flags=(%s %s %s) "
+                "sizeof_task=%ld sizeof_shared=%ld entry=%p\n",
+                gtid, loc_ref, input_flags->tiedness ? "tied  " : "untied",
+                input_flags->proxy ? "proxy" : "",
+                input_flags->detachable ? "detachable" : "", sizeof_kmp_task_t,
+                sizeof_shareds, task_entry));
+
+  retval = __kmp_task_alloc(loc_ref, gtid, input_flags, sizeof_kmp_task_t,
+                            sizeof_shareds, task_entry);
+
+  KA_TRACE(20, ("__kmpc_omp_task_alloc(exit): T#%d retval %p\n", gtid, retval));
+
+  return retval;
+}
+*/
 }
 
 typedef union kmp_cmplrdata {
@@ -301,7 +383,7 @@ kmp_int32 __fake_task_destroy(kmp_int32 i, void *t) {
 
     // Attach the async info to current task such that all dependent tasks can
     // start wait for the event if there is any dependency
-    bool HasDependency = __kmpc_set_async_info(AsyncInfo);
+    bool HasDependency = __kmpc_set_async_info(i, AsyncInfo);
     (void)HasDependency;
     //printf("HasDeps: %i\n", HasDependency);
 
@@ -331,7 +413,7 @@ kmp_int32 __fake_task_use(kmp_int32 i, void *t) {
     return Ret;
 }
 
-
+/*
 extern "C" {
 kmp_task_t *__kmpc_omp_task_alloc(ident_t *loc_ref, kmp_int32 gtid,
                                          kmp_int32 flags,
@@ -345,36 +427,57 @@ kmp_int32 __kmpc_omp_task_with_deps(ident_t *loc_ref, kmp_int32 gtid,
                                     kmp_int32 ndeps_noalias,
                                     kmp_depend_info_t *noalias_dep_list);
 }
-
-EXTERN void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
+*/
+#ifdef __cplusplus
+ extern "C" {
+#endif
+//EXTERN 
+/*
+void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
                          omp_interop_val_t **interop_ptr,
                          kmp_interop_type_t interop_type, kmp_int32 device_id,
                          kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                          kmp_int32 ndeps_noalias,
                          kmp_depend_info_t *noalias_dep_list) {
+*/
+void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
+                         omp_interop_val_t **interop_ptr,
+                         kmp_interop_type_t interop_type /*, kmp_int32 device_id,
+                         kmp_int32 ndeps, kmp_depend_info_t *dep_list*/) {
+  kmp_int32 device_id = 0;
+  kmp_int32 ndeps = 0;
+  kmp_depend_info_t *dep_list = NULL;  
+  kmp_int32 ndeps_noalias = 0;
+  kmp_depend_info_t *noalias_dep_list = NULL;
+  printf("interop_ptr %i", interop_ptr);
   assert(interop_ptr && "Cannot initialize nullptr!");
   assert(interop_type != kmp_interop_type_unknown &&
          "Cannot initialize with unknown interop_type!");
-  if (device_id == -1)
+  printf(" __kmpc_interop_init(): device_id %d interop_type %d \n", device_id, interop_type);
+  if (device_id == -1){
+    printf(" __kmpc_interop_init(): setting device_id to %d \n", omp_get_default_device());
     device_id = omp_get_default_device();
-
+  }
   *interop_ptr = new omp_interop_val_t(device_id, interop_type);
 
   if (device_id == omp_get_initial_device()) {
-    // TODO?
+    printf("Unhandled case: device_id == omp_get_initial_device(); This implies that the device is the host\n");
+    assert(device_id != omp_get_initial_device());
     return;
   }
 
   if (!device_is_ready(device_id)) {
+    printf("Device not ready!");	  
     (*interop_ptr)->err_str = "Device not ready!";
     return;
   }
 
-  DeviceTy &Device = Devices[device_id];
-  //printf("%i\n", (!Device.RTL || !Device.RTL->init_async_info));
-
+  DeviceTy &Device = PM->Devices[device_id];
   if (interop_type == kmp_interop_type_tasksync) {
-#ifdef SYNC_INTEROP
+	  printf("__kmpc_interop_init(): (interop_type == kmp_interop_type_tasksync)\n");
+//#ifdef SYNC_INTEROP
+#if 1
+	  printf("__kmpc_interop_init(): call __kmpc_omp_wait_deps()\n");
     __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
                          noalias_dep_list);
 #else
@@ -387,6 +490,7 @@ EXTERN void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
       // error
       delete *interop_ptr;
       *interop_ptr = omp_interop_none;
+      printf("__kmpc_interop_init(): Step1 setting *interop_ptr = omp_interop_none \n");
     }
   } else {
     if (!Device.RTL || !Device.RTL->init_device_info ||
@@ -395,13 +499,13 @@ EXTERN void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
       // error
       delete *interop_ptr;
       *interop_ptr = omp_interop_none;
+      printf("__kmpc_interop_init(): Step2 setting *interop_ptr = omp_interop_none \n");
     }
   }
-
-  (*interop_ptr)->async_info->DeviceID = device_id;
 }
 
-EXTERN void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
+//EXTERN 
+void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
                                omp_interop_val_t **interop_ptr,
                                kmp_interop_type_t interop_type,
                                kmp_int32 device_id, kmp_int32 ndeps,
@@ -419,7 +523,8 @@ EXTERN void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
          "Inconsistent device-id usage!");
 
   if (interop_val->interop_type == kmp_interop_type_tasksync) {
-#ifdef SYNC_INTEROP
+//#ifdef SYNC_INTEROP
+#if 1
     __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
                          noalias_dep_list);
 #else
@@ -430,9 +535,9 @@ EXTERN void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
     //flags.reserved = 42;
     flags.target = 1;
     flags.unshackled = 1;
-    kmp_int32 flags32 = *((kmp_int32*)&flags);
+    /*kmp_int32 flags32 = *((kmp_int32*)&flags);
 
-    DeviceTy &Device = Devices[device_id];
+    DeviceTy &Device = PM->Devices[device_id];
     kmp_task_t *task = __kmpc_omp_task_alloc(loc_ref, gtid, flags32,
                                             40,
                                             16,
@@ -449,11 +554,13 @@ EXTERN void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
                                     ndeps_noalias,
                                     noalias_dep_list);
     //printf("Done with fake task: %i \n", r);
+    */
 #endif
   }
 }
 
-EXTERN void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
+//EXTERN 
+void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
                             omp_interop_val_t **interop_ptr,
                             kmp_interop_type_t interop_type,
                             kmp_int32 device_id, kmp_int32 ndeps,
@@ -473,8 +580,9 @@ EXTERN void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
          "Inconsistent device-id usage!");
 
   if (interop_val->interop_type == kmp_interop_type_tasksync) {
-#ifdef SYNC_INTEROP
-    __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
+//#ifdef SYNC_INTEROP
+#if 1
+     __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
                          noalias_dep_list);
 #else
     kmp_tasking_flags flags;
@@ -485,8 +593,8 @@ EXTERN void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
     flags.target = 1;
     flags.unshackled = 1;
     kmp_int32 flags32 = *((kmp_int32*)&flags);
-
-    DeviceTy &Device = Devices[device_id];
+/*
+    DeviceTy &Device = PM->Devices[device_id];
     kmp_task_t *task  =__kmpc_omp_task_alloc(loc_ref, gtid, flags32,
                                             40,
                                             16,
@@ -503,10 +611,13 @@ EXTERN void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
                                     ndeps_noalias,
                                     noalias_dep_list);
     //printf("Done with fake task: %i \n", r);
-
+*/
 #endif
   }
 
   delete *interop_ptr;
   *interop_ptr = omp_interop_none;
 }
+#ifdef __cplusplus
+} //extern "C"
+#endif
