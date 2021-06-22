@@ -1,6 +1,6 @@
 #define CN (1<<11)
 
-#if 0
+#if 1
 #define VERBOSE(...) printf(__VA_ARGS__)
 #else
 #define VERBOSE(...)
@@ -9,7 +9,8 @@
 #define USE_OMP_H
 
 #ifdef USE_OMP_H
-#include "omp.h"
+//#include "build/runtime/openmp/runtime/src/omp.h"
+#include "build/runtimes/runtimes-bins/openmp/runtime/src/omp.h"
 #endif
 
 #include <stdio.h>
@@ -17,6 +18,8 @@
 #include <stdlib.h>
 #include <cuda.h>
 #include <assert.h>
+#include "openmp/libomptarget/include/omptarget.h"
+#include "openmp/libomptarget/include/interop.h"
 
 #ifndef USE_OMP_H
 typedef enum omp_interop_property_t {
@@ -31,14 +34,14 @@ typedef enum omp_interop_property_t {
   omp_interop_first = -8
 } omp_interop_property_t;
 #endif
-
+/*
 typedef enum kmp_interop_type_t {
   kmp_interop_type_unknown = -1,
   kmp_interop_type_platform,
   kmp_interop_type_device,
   kmp_interop_type_tasksync,
 } kmp_interop_type_t;
-
+*/
 typedef struct ident_t ident_t;
 typedef struct omp_interop_val_t omp_interop_val_t;
 typedef int32_t kmp_int32;
@@ -56,7 +59,7 @@ typedef struct kmp_depend_info {
   } flags;
 } kmp_depend_info_t;
 
-/*extern "C" {*/
+extern "C" {
 void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
                          omp_interop_val_t **interop_ptr,
                          kmp_interop_type_t interop_type, kmp_int32 device_id,
@@ -77,7 +80,8 @@ void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
                             kmp_depend_info_t *dep_list,
                             kmp_int32 ndeps_noalias,
                             kmp_depend_info_t *noalias_dep_list);
-/*}*/
+
+}
 
 kmp_task_t *__kmpc_omp_target_task_alloc(ident_t *loc_ref, kmp_int32 gtid,
                                          kmp_int32 flags,
@@ -85,7 +89,7 @@ kmp_task_t *__kmpc_omp_target_task_alloc(ident_t *loc_ref, kmp_int32 gtid,
                                          size_t sizeof_shareds,
                                          kmp_routine_entry_t task_entry,
                                          kmp_int64 device_id);
-
+/*
 #ifdef ASYNC_ONLY
 #define __OMP_GET_INTEROP_TY(RETURN_TYPE, SUFFIX)                              \
 RETURN_TYPE omp_get_interop_##SUFFIX(omp_interop_val_t **interop_ptr, \
@@ -96,6 +100,7 @@ __OMP_GET_INTEROP_TY(void *, ptr)
 __OMP_GET_INTEROP_TY(const char *, str)
 #undef __OMP_GET_INTEROP_TY
 #endif
+*/
 
 __attribute__((noinline))
 void work(double *A, double *B, int N) {
@@ -114,16 +119,18 @@ void busy_work() {
       free(B);
 }
 
+extern "C" {
 int __kmpc_global_thread_num(ident_t *);
+}
 
 typedef void* cudaStream_t;
 
-/*extern "C" {*/
+extern "C" {
 int cudaMalloc(void **, size_t);
 int cudaMemcpy(void *dst, const void *src, size_t count, int kind);
 int cudaMemcpyAsync(void *dst, const void *src, size_t count, int kind, cudaStream_t stream );
 int cudaStreamSynchronize(cudaStream_t stream);
-/*}*/
+}
 
 // ----------------------------------------------------------------------------------------------
 // SKIP AHEAD TILL HERE ;)
@@ -159,7 +166,8 @@ int main() {
   printf("Welcome :)\n#devices %i, device: %i, initial device: %i, default device: %i\n", omp_get_num_devices(), omp_get_device_num(), omp_get_initial_device(), omp_get_default_device());
 
   int device_id = omp_get_default_device();
-
+  //int device_id = omp_get_initial_device();
+  printf("main(): device_id %d\n", device_id);
   int *R0, *R1, R2 = 0;
   cudaMalloc((void**)&R0, sizeof(int));
   cudaMalloc((void**)&R1, sizeof(int));
@@ -185,7 +193,6 @@ int main() {
     depend_info_T1[1].flags.in = 0;
     depend_info_T1[1].flags.out = 1;
     depend_info_T1[1].flags.mtx = 0;
-
     int gtid= __kmpc_global_thread_num(NULL);
     VERBOSE("Gtid: %i\n", gtid);
 
@@ -197,59 +204,71 @@ int main() {
       *R0 = 1;
       VERBOSE("[%lf] End OMP T0\n", omp_get_wtime());
     }
-    VERBOSE("[%lf] After spawn OMP T0: %i\n", omp_get_wtime(), R2);
+    VERBOSE("[%lf] After spawn OMP T0: R2 %i\n", omp_get_wtime(), R2);
 
-    omp_interop_val_t *interop;
+    omp_interop_val_t *interop=NULL;
     __kmpc_interop_init(NULL, gtid, &interop, kmp_interop_type_tasksync, device_id, 0,
                         NULL, 0, NULL);
-    VERBOSE("After interop init: %i\n", R2);
 
-    for (int i = omp_interop_first; i < 0; i++) {
+    for (int i = omp_ipr_first; i < 0; i++) {
       int err;
       VERBOSE("%i: ", i);
-      fflush(stdout);
-      long int li = omp_get_interop_int(&interop, (omp_interop_property_t)(i), &err);
+      const char *n = omp_get_interop_name(interop, (omp_interop_property_t)(i));
+      VERBOSE("%15s ", n);
+      long int li = omp_get_interop_int(interop, (omp_interop_property_t)(i), &err);
       VERBOSE("%15li [E:%3i] ", li, err);
-      const void *p = omp_get_interop_ptr(&interop, (omp_interop_property_t)(i), &err);
+      const void *p = omp_get_interop_ptr(interop, (omp_interop_property_t)(i), &err);
       VERBOSE("%15p [E:%3i] ", p, err);
-      const char *s = omp_get_interop_str(&interop, (omp_interop_property_t)(i), &err);
-      VERBOSE("%15s [E:%3i]\n", s, err);
+      const char *s = omp_get_interop_str(interop, (omp_interop_property_t)(i), &err);
+      VERBOSE("%15s [E:%3i] ", s, err);
+      const char *n1 = omp_get_interop_type_desc(interop, (omp_interop_property_t)(i));
+      VERBOSE("%15s \n", n1);
+      //const char *n2 = omp_get_interop_rc_desc(interop, (omp_interop_property_t)(i));
+      //VERBOSE("%15s [E:%3i]\n", n2, err);
     }
-    VERBOSE("After interop inspect: %i\n", R2);
+    VERBOSE("After interop inspect: R2 %i\n", R2);
 
-
+    fflush(stdout);
     __kmpc_interop_use(NULL, gtid, &interop, kmp_interop_type_tasksync, device_id, 2,
                        &depend_info_T1[0], 0, NULL);
     VERBOSE("[%lf] After interop use: %i\n", omp_get_wtime(), R2);
+    assert((interop)->interop_type == kmp_interop_type_tasksync); 
+    
+    //printf("interop %i\n ", interop);
+    //printf("&interop %i\n ", &interop);
 
-    cudaStream_t stream = (omp_get_interop_ptr(&interop, omp_interop_tasksync, NULL));
-    VERBOSE("After get stream %p: %i\n", stream, R2);
+    cudaStream_t stream = (omp_get_interop_ptr(interop, omp_ipr_targetsync, NULL));
+    VERBOSE("After get stream %i: R2 %i\n", stream, R2);
 
     int cudaMemcpyDefault = 4;
-    printf("Issue CUDA async memcpy       on stream (=%p)\n", stream);
+    printf("Issue CUDA async memcpy       on stream (=%i)\n", stream);
     int r = cudaMemcpyAsync(&R1, &R0, sizeof(int), cudaMemcpyDefault, stream);
-    VERBOSE("[%lf] After cuda memcpy async [%i]: %i\n", omp_get_wtime(), r, R2);
+    VERBOSE("[%lf] After cuda memcpy async [%i]: R2 %i\n", omp_get_wtime(), r, R2);
 
     __kmpc_interop_destroy(NULL, gtid, &interop, kmp_interop_type_tasksync, device_id, 2,
                            &depend_info_T1[0], 0, NULL);
-    VERBOSE("[%lf] After interop destroy: %i\n", omp_get_wtime(), R2);
+    VERBOSE("[%lf] After interop destroy: R2 %i\n", omp_get_wtime(), R2);
 
     #pragma omp target depend(in:D2) is_device_ptr(R0,R1) map(from:R2) nowait
     {
       R2 = *R1;
-      VERBOSE("[%lf] End OMP T2 %i %i\n", omp_get_wtime(), *R0, R2);
+      VERBOSE("[%lf] End OMP T2 *R0 %i R2 %i\n", omp_get_wtime(), *R0, R2);
     }
-    VERBOSE("[%lf] After spawn OMP T2: %i\n", omp_get_wtime(), R2);
+    VERBOSE("[%lf] After spawn OMP T2: R2 %i\n", omp_get_wtime(), R2);
 
-    printf("\n[%lf] - Setup done, waiting for T0 to finish, to trigger T1 which triggers T2, result: %i (probably still 0)\n",omp_get_wtime(), R2);
-
-    busy_work();
-    busy_work();
-    printf("\n[%lf] - After first  wait: result: %i\n", omp_get_wtime(), R2);
+    printf("\n[%lf] - Setup done, waiting for T0 to finish, to trigger T1 which triggers T2, result: R2 %i (probably still 0)\n",omp_get_wtime(), R2);
 
     busy_work();
     busy_work();
-    printf("\n[%lf] - After second wait: result: %i - Waiting at the parallel region's (implicit) barrier now\n", omp_get_wtime(), R2);
+    printf("\n[%lf] - After first  wait: result: R2 %i\n", omp_get_wtime(), R2);
+
+    busy_work();
+    busy_work();
+    printf("\n[%lf] - After second wait: result: R2 %i - Waiting at the parallel region's (implicit) barrier now\n", omp_get_wtime(), R2);
+
+    busy_work();
+    busy_work();
+    printf("\n[%lf] - After third  wait: result: R2 %i - Waiting at the parallel region's (implicit) barrier now\n", omp_get_wtime(), R2);
   }
 
   printf("[%lf] Final: %i (should be 1)\n", omp_get_wtime(), R2);
