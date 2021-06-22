@@ -730,6 +730,21 @@ public:
                                       llvm::ConstantInt *Size,
                                       const llvm::Twine &Name = Twine(""));
 
+  /// Create a runtime call for kmpc_interop_init
+  ///
+  /// \param Loc The insert and source location description.
+  /// \param Size Size of allocated memory space
+  /// \param Allocator Allocator information instruction
+  /// \param Name Name of call Instruction for OMP_alloc
+  ///
+  /// \returns CallInst to the OMP_Interop_int  call
+  CallInst *createOMPInteropInit(const LocationDescription &Loc, 
+		                 llvm::Value* Pointer, 
+				 bool IsTarget, 
+				 bool IsTargetSync, 
+				 llvm::Value* Device, 
+				 llvm::Value* NumDependences, 
+				 llvm::Value* DependenceAddress);
   /// Declarations for LLVM-IR types (simple, array, function and structure) are
   /// generated below. Their names are defined and used in OpenMPKinds.def. Here
   /// we provide the declarations, the initializeTypes function will provide the

@@ -1865,6 +1865,15 @@ public:
                                                      const VarDecl *VD,
                                                      SourceLocation Loc);
 
+
+  /// Froms list of dependecies based on the provided data (array of
+  /// dependence/expression pairs).
+  /// \returns Pointer to the first element of the array casted to VoidPtr type.
+  std::pair<llvm::Value *, Address>
+  getDependenceFromDependClause(CodeGenFunction &CGF,
+                   ArrayRef<OMPTaskDataTy::DependData> Dependencies,
+                   SourceLocation Loc);
+
   /// Emits list of dependecies based on the provided data (array of
   /// dependence/expression pairs).
   /// \returns Pointer to the first element of the array casted to VoidPtr type.
