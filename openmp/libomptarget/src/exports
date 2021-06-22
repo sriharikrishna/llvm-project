@@ -43,6 +43,9 @@ VERSION {
     omp_get_interop_ptr;
     omp_get_interop_str;
     omp_get_interop_int;
+    omp_get_interop_name;
+    omp_get_interop_type_desc;
+    omp_get_interop_rc_desc;
     __kmpc_interop_init;
     __kmpc_interop_use;
     __kmpc_interop_destroy;
