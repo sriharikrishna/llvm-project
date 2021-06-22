@@ -1051,6 +1051,28 @@ public:
     return (Err == CUDA_SUCCESS) ? OFFLOAD_SUCCESS : OFFLOAD_FAIL;
   }
 
+  int releaseAsyncInfo(int DeviceId, __tgt_async_info *AsyncInfo) const {
+    if (AsyncInfo->Queue) {
+      StreamManager->returnStream(
+          DeviceId, reinterpret_cast<CUstream>(AsyncInfo->Queue));
+      AsyncInfo->Queue = nullptr;
+    }
+
+    return OFFLOAD_SUCCESS;
+  }
+
+  int initAsyncInfo(int DeviceId, __tgt_async_info **AsyncInfo) const {
+    CUresult Err = cuCtxSetCurrent(DeviceData[DeviceId].Context);
+    if (!checkResult(Err, "error returned from cuCtxSetCurrent"))
+      return OFFLOAD_FAIL;
+
+    __tgt_async_info *P = new __tgt_async_info;
+    *AsyncInfo = P;
+    getStream(DeviceId, *AsyncInfo);
+    printf("initAsyncInfo AsyncInfo->Queue %i", (*AsyncInfo)->Queue);
+    return OFFLOAD_SUCCESS;
+  }
+
   int initDeviceInfo(const int DeviceId, __tgt_device_info *DeviceInfo,
                      const char **errStr) const {
     assert(DeviceInfo && "DeviceInfo is nullptr");
