@@ -495,28 +495,6 @@ int32_t DeviceTy::synchronize(AsyncInfoTy &AsyncInfo) {
   return OFFLOAD_SUCCESS;
 }
 
-int DeviceTy::initAsyncInfo(__tgt_async_info **AsyncInfo) {
-  if (!RTL->AsyncSupported) {
-    DP("Asynchronous offloading is not supported");
-    return OFFLOAD_FAIL;
-  }
-
-  if (RTL->init_async_info(RTLDeviceID, AsyncInfo) != OFFLOAD_SUCCESS)
-    return OFFLOAD_FAIL;
-  (*AsyncInfo)->DeviceID = DeviceID;
-
-  return OFFLOAD_SUCCESS;
-}
-
-int32_t DeviceTy::releaseAsyncInfo(__tgt_async_info *AsyncInfo) {
-  if (!RTL->AsyncSupported) {
-    DP("Asynchronous offloading is not supported");
-    return OFFLOAD_FAIL;
-  }
-
-  return RTL->release_async_info(RTLDeviceID, AsyncInfo);
-}
-
 /// Check whether a device has an associated RTL and initialize it if it's not
 /// already initialized.
 bool device_is_ready(int device_num) {
