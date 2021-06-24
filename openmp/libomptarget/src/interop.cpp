@@ -431,43 +431,32 @@ kmp_int32 __kmpc_omp_task_with_deps(ident_t *loc_ref, kmp_int32 gtid,
 #ifdef __cplusplus
  extern "C" {
 #endif
-//EXTERN 
-/*
 void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
                          omp_interop_val_t **interop_ptr,
-                         kmp_interop_type_t interop_type, kmp_int32 device_id,
-                         kmp_int32 ndeps, kmp_depend_info_t *dep_list,
-                         kmp_int32 ndeps_noalias,
-                         kmp_depend_info_t *noalias_dep_list) {
-*/
-void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
-                         omp_interop_val_t **interop_ptr,
-                         kmp_interop_type_t interop_type /*, kmp_int32 device_id,
-                         kmp_int32 ndeps, kmp_depend_info_t *dep_list*/) {
-  kmp_int32 device_id = 0;
-  kmp_int32 ndeps = 0;
-  kmp_depend_info_t *dep_list = NULL;  
+                         kmp_interop_type_t interop_type  ,kmp_int32 device_id,
+                         kmp_int64 ndeps ,kmp_depend_info_t *dep_list) {
   kmp_int32 ndeps_noalias = 0;
   kmp_depend_info_t *noalias_dep_list = NULL;
-  printf("interop_ptr %i", interop_ptr);
+  printf("__kmpc_interop_init(): interop_ptr %i \n", interop_ptr);
   assert(interop_ptr && "Cannot initialize nullptr!");
+  assert(*interop_ptr == NULL && "*interop_ptr is not NULL");
   assert(interop_type != kmp_interop_type_unknown &&
          "Cannot initialize with unknown interop_type!");
-  printf(" __kmpc_interop_init(): device_id %d interop_type %d \n", device_id, interop_type);
+  printf("__kmpc_interop_init(): device_id %d interop_type %d \n", device_id, interop_type);
   if (device_id == -1){
-    printf(" __kmpc_interop_init(): setting device_id to %d \n", omp_get_default_device());
+    printf("__kmpc_interop_init(): setting device_id to %d \n", omp_get_default_device());
     device_id = omp_get_default_device();
   }
   *interop_ptr = new omp_interop_val_t(device_id, interop_type);
 
   if (device_id == omp_get_initial_device()) {
-    printf("Unhandled case: device_id == omp_get_initial_device(); This implies that the device is the host\n");
+    printf("__kmpc_interop_init(): Unhandled case: device_id == omp_get_initial_device(); This implies that the device is the host\n");
     assert(device_id != omp_get_initial_device());
     return;
   }
 
   if (!device_is_ready(device_id)) {
-    printf("Device not ready!");	  
+    printf("__kmpc_interop_init(): Device not ready!\n");	  
     (*interop_ptr)->err_str = "Device not ready!";
     return;
   }

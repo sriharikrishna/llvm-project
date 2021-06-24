@@ -9,7 +9,7 @@
 // This contains code to emit OpenMP nodes as LLVM code.
 //
 //===----------------------------------------------------------------------===//
-
+#include <iostream>
 #include "CGCleanup.h"
 #include "CGOpenMPRuntime.h"
 #include "CodeGenFunction.h"
@@ -6190,12 +6190,16 @@ void CodeGenFunction::EmitOMPTeamsDistributeParallelForSimdDirective(
                                    [](CodeGenFunction &) { return nullptr; });
 }
 
-void CodeGenFunction::EmitInteropDirective(
+void CodeGenFunction::EmitOMPInteropDirective(
     const OMPInteropDirective &S) {
   llvm::OpenMPIRBuilder &OMPBuilder = CGM.getOpenMPRuntime().getOMPBuilder();
   llvm::Value *Device = nullptr;
   if (const auto *C = S.getSingleClause<OMPDeviceClause>()){
     Device = EmitScalarExpr(C->getDevice());
+    std::cout << "EmitOMPInteropDirective(): Device isLValue" <<  C->getDevice()->isLValue() << std::endl;
+    std::cout << "EmitOMPInteropDirective(): Device isRValue" <<  C->getDevice()->isLValue() << std::endl;
+    std::cout << "EmitOMPInteropDirective(): Device isXValue" <<  C->getDevice()->isXValue() << std::endl;
+    std::cout << "EmitOMPInteropDirective(): Device isGLValue" <<  C->getDevice()->isGLValue() << std::endl;
   }
   llvm::Value * NumDependences = nullptr;
   llvm::Value *DependenceAddress = nullptr;
@@ -6210,17 +6214,29 @@ void CodeGenFunction::EmitInteropDirective(
       Builder.CreatePointerCast(DependencePair.second.getPointer(), CGM.Int8PtrTy);
   }
   if (const auto *C = S.getSingleClause<OMPInitClause>()) {
-    llvm::Value *Interopvar = EmitScalarExpr(C->getInteropVar());
-    llvm::ConstantInt* Intval = dyn_cast<llvm::ConstantInt>(EmitScalarExpr(C->getInteropVar()));
+    //llvm::Value *Interopvar = EmitScalarExpr(C->getInteropVar());
+    //llvm::ConstantInt* Intval = dyn_cast<llvm::ConstantInt>(EmitScalarExpr(C->getInteropVar()));
     if (llvm::ConstantInt* CI = dyn_cast<llvm::ConstantInt>(NumDependences)) {
-      std::cout << "NumDependences is a ConstantInt";
+      std::cout << "EmitOMPInteropDirective(): NumDependences is a ConstantInt" << std::endl;
       if (CI->getBitWidth() <= 64) {
-              std::cout << " NumDependences " << CI->getSExtValue() << std::endl;
+              std::cout << "EmitOMPInteropDirective(): NumDependences " << CI->getSExtValue() << std::endl;
       }
     }
+    /*SmallString<256> Buffer;
+    llvm::raw_svector_ostream Out(Buffer);
+    Interopvar->printAsOperand(Out);
+    std::cout << "::" << Out.str().str() <<"::\n";
+    Interopvar->dump ();
+    std::cout << "isLValue" <<  C->getInteropVar()->isLValue() << std::endl;
+    std::cout << "isRValue" <<  C->getInteropVar()->isLValue() << std::endl;
+    std::cout << "isXValue" <<  C->getInteropVar()->isXValue() << std::endl;
+    std::cout << "isGLValue" <<  C->getInteropVar()->isGLValue() << std::endl;*/
+    llvm::DenseSet<const VarDecl *> EmittedAsPrivate;
+    //const auto *OrigVD = cast<VarDecl>(cast<DeclRefExpr>(C->getInteropVar())->getDecl());
+    llvm::Value *Addr = (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
     llvm::CallInst *CI =
           OMPBuilder.createOMPInteropInit(Builder,
-                          Interopvar,
+                          Addr, /*Interopvar,*/
                           C->getIsTarget(),
                           C->getIsTargetSync(),
                           Device,

@@ -739,7 +739,7 @@ public:
   ///
   /// \returns CallInst to the OMP_Interop_int  call
   CallInst *createOMPInteropInit(const LocationDescription &Loc, 
-		                 llvm::Value* Pointer, 
+		                 llvm::Value* InteropVar,
 				 bool IsTarget, 
 				 bool IsTargetSync, 
 				 llvm::Value* Device, 
