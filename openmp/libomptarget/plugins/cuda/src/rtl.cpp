@@ -1069,7 +1069,6 @@ public:
     __tgt_async_info *P = new __tgt_async_info;
     *AsyncInfo = P;
     getStream(DeviceId, *AsyncInfo);
-    printf("initAsyncInfo AsyncInfo->Queue %i", (*AsyncInfo)->Queue);
     return OFFLOAD_SUCCESS;
   }
 
