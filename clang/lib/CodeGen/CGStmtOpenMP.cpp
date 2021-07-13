@@ -6196,53 +6196,64 @@ void CodeGenFunction::EmitOMPInteropDirective(
   llvm::Value *Device = nullptr;
   if (const auto *C = S.getSingleClause<OMPDeviceClause>()){
     Device = EmitScalarExpr(C->getDevice());
-    std::cout << "EmitOMPInteropDirective(): Device isLValue" <<  C->getDevice()->isLValue() << std::endl;
-    std::cout << "EmitOMPInteropDirective(): Device isRValue" <<  C->getDevice()->isLValue() << std::endl;
-    std::cout << "EmitOMPInteropDirective(): Device isXValue" <<  C->getDevice()->isXValue() << std::endl;
-    std::cout << "EmitOMPInteropDirective(): Device isGLValue" <<  C->getDevice()->isGLValue() << std::endl;
   }
-  llvm::Value * NumDependences = nullptr;
+
+  int DependClauseCount = 0;
+  for (const auto *DC : S.getClausesOfKind<OMPDependClause>()) 
+    DependClauseCount++;
+  assert(DependClauseCount<=1 && "Multiple OMPDependClause not supported.");
+
+  llvm::Value *NumDependences = nullptr;
   llvm::Value *DependenceAddress = nullptr;
   if (const auto *DC = S.getSingleClause<OMPDependClause>()) {
     OMPTaskDataTy::DependData Dependencies(DC->getDependencyKind(),
                                            DC->getModifier());
     Dependencies.DepExprs.append(DC->varlist_begin(), DC->varlist_end());
-    std::pair<llvm::Value *, Address> DependencePair = CGM.getOpenMPRuntime().getDependenceFromDependClause(
+    std::pair<llvm::Value *, Address> DependencePair = CGM.getOpenMPRuntime().emitDependClause(
         *this, Dependencies, DC->getBeginLoc());
     NumDependences = DependencePair.first;
     DependenceAddress =
       Builder.CreatePointerCast(DependencePair.second.getPointer(), CGM.Int8PtrTy);
   }
+
+  int HaveNowaitClause = 0;
+  if (S.getSingleClause<OMPNowaitClause>())
+    HaveNowaitClause = 1;
+  
   if (const auto *C = S.getSingleClause<OMPInitClause>()) {
-    //llvm::Value *Interopvar = EmitScalarExpr(C->getInteropVar());
-    //llvm::ConstantInt* Intval = dyn_cast<llvm::ConstantInt>(EmitScalarExpr(C->getInteropVar()));
-    if (llvm::ConstantInt* CI = dyn_cast<llvm::ConstantInt>(NumDependences)) {
-      std::cout << "EmitOMPInteropDirective(): NumDependences is a ConstantInt" << std::endl;
-      if (CI->getBitWidth() <= 64) {
-              std::cout << "EmitOMPInteropDirective(): NumDependences " << CI->getSExtValue() << std::endl;
-      }
-    }
-    /*SmallString<256> Buffer;
-    llvm::raw_svector_ostream Out(Buffer);
-    Interopvar->printAsOperand(Out);
-    std::cout << "::" << Out.str().str() <<"::\n";
-    Interopvar->dump ();
-    std::cout << "isLValue" <<  C->getInteropVar()->isLValue() << std::endl;
-    std::cout << "isRValue" <<  C->getInteropVar()->isLValue() << std::endl;
-    std::cout << "isXValue" <<  C->getInteropVar()->isXValue() << std::endl;
-    std::cout << "isGLValue" <<  C->getInteropVar()->isGLValue() << std::endl;*/
-    llvm::DenseSet<const VarDecl *> EmittedAsPrivate;
-    //const auto *OrigVD = cast<VarDecl>(cast<DeclRefExpr>(C->getInteropVar())->getDecl());
-    llvm::Value *Addr = (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
-    llvm::CallInst *CI =
-          OMPBuilder.createOMPInteropInit(Builder,
-                          Addr, /*Interopvar,*/
-                          C->getIsTarget(),
-                          C->getIsTargetSync(),
+    llvm::Value *InteropvarPtr = (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
+    llvm::OMPInteropType InteropType = llvm::OMPInteropType::Unknown;
+    if (C->getIsTarget())
+      InteropType = llvm::OMPInteropType::Target;
+    else if (C->getIsTargetSync())
+      InteropType = llvm::OMPInteropType::TargetSync;
+    OMPBuilder.createOMPInteropInit(Builder,
+                          InteropvarPtr,
+			  InteropType,
                           Device,
                           NumDependences,
-                          DependenceAddress);
-    return;
+                          DependenceAddress,
+                          HaveNowaitClause);
+  } else if (const auto *C = S.getSingleClause<OMPDestroyClause>()) {
+    llvm::Value *InteropvarPtr = (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
+    OMPBuilder.createOMPInteropDestroy(Builder,
+                          InteropvarPtr,
+                          Device,
+                          NumDependences,
+                          DependenceAddress,
+			  HaveNowaitClause);
+  } else if (const auto *C = S.getSingleClause<OMPUseClause>()) {
+    llvm::Value *InteropvarPtr = (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
+    OMPBuilder.createOMPInteropUse(Builder,
+                          InteropvarPtr,
+                          Device,
+                          NumDependences,
+                          DependenceAddress,
+                          HaveNowaitClause);
+  } else if (HaveNowaitClause == true) {
+     llvm_unreachable("Nowait clause is used separately in Interop Directive.");
+  } else {
+     llvm_unreachable("Missing Interop clauses.");
   }
 }
 

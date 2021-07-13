@@ -120,6 +120,13 @@ enum class OMPScheduleType {
 
 } // end namespace omp
 
+/// \note This needs to be kept in sync with kmp.h enum sched_type.
+/// Todo: Update kmp.h to include this file, and remove the enums in kmp.h
+///       To complete this, more enum values will need to be moved here.
+enum class OMPInteropType {
+ Unknown,Target,TargetSync  
+};
+
 } // end namespace llvm
 
 #endif // LLVM_FRONTEND_OPENMP_OMPCONSTANTS_H

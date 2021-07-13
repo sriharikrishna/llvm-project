@@ -211,7 +211,7 @@ void *__kmpc_interop_get_property<void *>(omp_interop_val_t &interop_val,
     //printf("XX device_context");
     return interop_val.device_info.Context;
   case omp_ipr_targetsync:
-    printf("XX targetsync");
+    //printf("XX targetsync");
     if(interop_val.async_info==NULL)
 	    printf("interop_val.async_info==NULL \n");
     return interop_val.async_info->Queue;
@@ -274,7 +274,6 @@ RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
     omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
     assert((interop_val)->interop_type == kmp_interop_type_tasksync);\
     if (!__kmpc_interop_get_property_check(&interop_val, property_id, err)){    \
-      /*printf("ZZZZZZ");*/	 \
       return (RETURN_TYPE)(0);                                                 \
     }\
     return __kmpc_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
@@ -292,7 +291,6 @@ RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
     int err;                                                                  \
     omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
     if (!__kmpc_interop_get_property_check(&interop_val, property_id, &err)){    \
-      /*printf("YYYYYY");*/	 \
       return (RETURN_TYPE)(0); \
     }\
     return nullptr;\
@@ -432,14 +430,17 @@ kmp_int32 __kmpc_omp_task_with_deps(ident_t *loc_ref, kmp_int32 gtid,
  extern "C" {
 #endif
 void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
-                         omp_interop_val_t **interop_ptr,
+                         omp_interop_val_t *&interop_ptr,
                          kmp_interop_type_t interop_type  ,kmp_int32 device_id,
-                         kmp_int64 ndeps ,kmp_depend_info_t *dep_list) {
+                         kmp_int64 ndeps, kmp_depend_info_t *dep_list, kmp_int32 have_nowait) {
+  //kmp_int32 ndeps = 0;
+  //kmp_depend_info_t *dep_list = NULL;
   kmp_int32 ndeps_noalias = 0;
   kmp_depend_info_t *noalias_dep_list = NULL;
+  printf("In __kmpc_interop_init \n");
   printf("__kmpc_interop_init(): interop_ptr %i \n", interop_ptr);
-  assert(interop_ptr && "Cannot initialize nullptr!");
-  assert(*interop_ptr == NULL && "*interop_ptr is not NULL");
+  //SHK assert(interop_ptr && "Cannot initialize nullptr!");
+  //SHK assert(*interop_ptr == NULL && "*interop_ptr is not NULL");
   assert(interop_type != kmp_interop_type_unknown &&
          "Cannot initialize with unknown interop_type!");
   printf("__kmpc_interop_init(): device_id %d interop_type %d \n", device_id, interop_type);
@@ -447,7 +448,10 @@ void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
     printf("__kmpc_interop_init(): setting device_id to %d \n", omp_get_default_device());
     device_id = omp_get_default_device();
   }
-  *interop_ptr = new omp_interop_val_t(device_id, interop_type);
+  //SHK *interop_ptr = new omp_interop_val_t(device_id, interop_type);
+  printf("__kmpc_interop_init(): %i \n", interop_ptr);	  
+  interop_ptr = new omp_interop_val_t(device_id, interop_type);
+  printf("__kmpc_interop_init(): %i \n", interop_ptr);	  
 
   if (device_id == omp_get_initial_device()) {
     printf("__kmpc_interop_init(): Unhandled case: device_id == omp_get_initial_device(); This implies that the device is the host\n");
@@ -457,7 +461,8 @@ void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
 
   if (!device_is_ready(device_id)) {
     printf("__kmpc_interop_init(): Device not ready!\n");	  
-    (*interop_ptr)->err_str = "Device not ready!";
+    //SHK (*interop_ptr)->err_str = "Device not ready!";
+    interop_ptr->err_str = "Device not ready!";
     return;
   }
 
@@ -475,39 +480,70 @@ void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
 
   if (interop_type == kmp_interop_type_tasksync) {
     if (!Device.RTL || !Device.RTL->init_async_info ||
-        Device.RTL->init_async_info(device_id, &(*interop_ptr)->async_info)) {
+        //SHK Device.RTL->init_async_info(device_id, &(*interop_ptr)->async_info)) {
+        Device.RTL->init_async_info(device_id, &(interop_ptr)->async_info)) {
       // error
-      delete *interop_ptr;
-      *interop_ptr = omp_interop_none;
+      //SHK delete *interop_ptr;
+      delete interop_ptr;
+      //SHK *interop_ptr = omp_interop_none;
+      interop_ptr = omp_interop_none;
       printf("__kmpc_interop_init(): Step1 setting *interop_ptr = omp_interop_none \n");
     }
   } else {
     if (!Device.RTL || !Device.RTL->init_device_info ||
-        Device.RTL->init_device_info(device_id, &(*interop_ptr)->device_info,
-                                     &(*interop_ptr)->err_str)) {
+        //SHK Device.RTL->init_device_info(device_id, &(*interop_ptr)->device_info,
+        //                             &(*interop_ptr)->err_str)) {
+        Device.RTL->init_device_info(device_id, &(interop_ptr)->device_info,
+                                     &(interop_ptr)->err_str)) {
       // error
-      delete *interop_ptr;
-      *interop_ptr = omp_interop_none;
+      //SHK delete *interop_ptr;
+      delete interop_ptr;
+      //SHK *interop_ptr = omp_interop_none;
       printf("__kmpc_interop_init(): Step2 setting *interop_ptr = omp_interop_none \n");
     }
   }
 }
 
 //EXTERN 
-void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
+/*void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
                                omp_interop_val_t **interop_ptr,
                                kmp_interop_type_t interop_type,
                                kmp_int32 device_id, kmp_int32 ndeps,
                                kmp_depend_info_t *dep_list,
                                kmp_int32 ndeps_noalias,
-                               kmp_depend_info_t *noalias_dep_list) {
+                               kmp_depend_info_t *noalias_dep_list) {*/
+void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
+                            omp_interop_val_t *interop_ptr,
+                            kmp_int32 device_id, kmp_int32 ndeps,
+                            kmp_depend_info_t *dep_list) {
+  printf("In __kmpc_interop_use ndeps %d dep_list %i %i\n", ndeps,dep_list, *dep_list);
+  printf("In __kmpc_interop_use ndeps %d dep_list %i \n", ndeps,&dep_list[0]);
+  printf("In __kmpc_interop_use ndeps %d dep_list %i \n", ndeps,&dep_list[1]);
+  for(int i = 0; i < ndeps; i++)
+    printf("Dep %d %i %u %u %u %u \n", i, dep_list[i].base_addr, 
+			  dep_list[i].len, 
+			  dep_list[i].flags.in,
+			  dep_list[i].flags.out,
+			  dep_list[i].flags.mtx);
+/*  typedef struct kmp_depend_info {
+  intptr_t base_addr;
+  size_t len;
+  struct {
+   unsigned in : 1;
+   unsigned out : 1;
+   unsigned mtx : 1;
+  } flags;
+} kmp_depend_info_t;
+*/
+  kmp_int32 ndeps_noalias = 0;
+  kmp_depend_info_t *noalias_dep_list = NULL;
   assert(interop_ptr && "Cannot use nullptr!");
-  omp_interop_val_t *interop_val = *interop_ptr;
+  omp_interop_val_t *interop_val = interop_ptr;
   assert(interop_val != omp_interop_none &&
          "Cannot use uninitialized interop_ptr!");
-  assert((interop_type == kmp_interop_type_unknown ||
-          interop_val->interop_type == interop_type) &&
-         "Inconsistent interop_ptr-type usage!");
+  //assert((interop_type == kmp_interop_type_unknown ||
+  //        interop_val->interop_type == interop_type) &&
+  //       "Inconsistent interop_ptr-type usage!");
   assert((device_id == -1 || interop_val->device_id == device_id) &&
          "Inconsistent device-id usage!");
 
@@ -549,22 +585,29 @@ void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
 }
 
 //EXTERN 
-void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
+/*void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
                             omp_interop_val_t **interop_ptr,
                             kmp_interop_type_t interop_type,
                             kmp_int32 device_id, kmp_int32 ndeps,
                             kmp_depend_info_t *dep_list,
                             kmp_int32 ndeps_noalias,
-                            kmp_depend_info_t *noalias_dep_list) {
+                            kmp_depend_info_t *noalias_dep_list) {*/
+void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
+                            omp_interop_val_t *&interop_ptr,
+                            kmp_int32 device_id, kmp_int32 ndeps,
+                            kmp_depend_info_t *dep_list) {
+  printf("In __kmpc_interop_destroy \n");
+  kmp_int32 ndeps_noalias = 0;
+  kmp_depend_info_t *noalias_dep_list = NULL;	
   assert(interop_ptr && "Cannot use nullptr!");
-  omp_interop_val_t *interop_val = *interop_ptr;
+  omp_interop_val_t *interop_val = interop_ptr;
   // Gracefully handle the destruction of none objects, I guess.
   if (interop_val == omp_interop_none)
     return;
 
-  assert((interop_type == kmp_interop_type_unknown ||
-          interop_val->interop_type == interop_type) &&
-         "Inconsistent interop_ptr-type usage!");
+  //assert((interop_type == kmp_interop_type_unknown ||
+  //        interop_val->interop_type == interop_type) &&
+  //       "Inconsistent interop_ptr-type usage!");
   assert((device_id == -1 || interop_val->device_id == device_id) &&
          "Inconsistent device-id usage!");
 
@@ -604,8 +647,8 @@ void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
 #endif
   }
 
-  delete *interop_ptr;
-  *interop_ptr = omp_interop_none;
+  delete interop_ptr;
+  interop_ptr = omp_interop_none;
 }
 #ifdef __cplusplus
 } //extern "C"
