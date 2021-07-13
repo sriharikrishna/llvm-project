@@ -1,0 +1,24 @@
+// RUN: %clang_cc1 -verify -fopenmp  -o -  %s
+
+// expected-no-diagnostics
+typedef void *omp_interop_t;
+
+void test1() {
+
+  int device_id = 4; 
+  int D0, D1;
+  omp_interop_t interop;
+
+  #pragma omp interop init(target: interop) 
+
+  #pragma omp interop init(targetsync: interop)
+    
+  #pragma omp interop init(target: interop) device(device_id)
+    
+  #pragma omp interop init(targetsync: interop) device(device_id) 
+  
+  #pragma omp interop use(interop) depend(in:D0, D1) nowait
+
+  #pragma omp interop destroy(interop) depend(in:D0, D1)   
+}
+
