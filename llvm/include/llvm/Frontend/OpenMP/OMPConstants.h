@@ -130,6 +130,8 @@ enum class OMPScheduleType {
 
 } // end namespace omp
 
+enum class OMPInteropType { Unknown, Target, TargetSync };
+
 } // end namespace llvm
 
 #endif // LLVM_FRONTEND_OPENMP_OMPCONSTANTS_H
