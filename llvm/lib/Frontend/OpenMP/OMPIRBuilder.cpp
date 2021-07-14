@@ -2175,11 +2175,11 @@ CallInst *OpenMPIRBuilder::createOMPFree(const LocationDescription &Loc,
 
 CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc,
                                                 Value *InteropVar,
-                                                OMPInteropType InteropType,
-                                                llvm::Value *Device,
-                                                llvm::Value *NumDependences,
-                                                llvm::Value *DependenceAddress,
-                                                int HaveNowaitClause) {
+                                                omp::OMPInteropType InteropType,
+                                                Value *Device,
+                                                Value *NumDependences,
+                                                Value *DependenceAddress,
+                                                bool HaveNowaitClause) {
   IRBuilder<>::InsertPointGuard IPG(Builder);
   Builder.restoreIP(Loc.IP);
 
@@ -2188,12 +2188,12 @@ CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc,
   Value *ThreadId = getOrCreateThreadID(Ident);
   if (Device == NULL)
     Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
-  ConstantInt *InteropTypeVal =
-      ConstantInt::get(M.getContext(), APInt(64, (int)InteropType, true));
+  Constant *InteropTypeVal =
+      ConstantInt::get(Int64, (int)InteropType);
   if (NumDependences == nullptr) {
-    NumDependences = ConstantInt::get(M.getContext(), APInt(32, 0, true));
-    PointerType *PointerTy_0 = llvm::Type::getInt8PtrTy(M.getContext());
-    DependenceAddress = ConstantPointerNull::get(PointerTy_0);
+    NumDependences = ConstantInt::get(Int32, 0);
+    PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
+    DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
   Value *HaveNowaitClauseVal =
       ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
@@ -2207,9 +2207,9 @@ CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc,
 }
 
 CallInst *OpenMPIRBuilder::createOMPInteropDestroy(
-    const LocationDescription &Loc, Value *InteropVar, llvm::Value *Device,
-    llvm::Value *NumDependences, llvm::Value *DependenceAddress,
-    int HaveNowaitClause) {
+    const LocationDescription &Loc, Value *InteropVar, Value *Device,
+    Value *NumDependences, Value *DependenceAddress,
+    bool HaveNowaitClause) {
   IRBuilder<>::InsertPointGuard IPG(Builder);
   Builder.restoreIP(Loc.IP);
 
@@ -2219,9 +2219,9 @@ CallInst *OpenMPIRBuilder::createOMPInteropDestroy(
   if (Device == NULL)
     Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
   if (NumDependences == nullptr) {
-    NumDependences = ConstantInt::get(M.getContext(), APInt(32, 0, true));
-    PointerType *PointerTy_0 = llvm::Type::getInt8PtrTy(M.getContext());
-    DependenceAddress = ConstantPointerNull::get(PointerTy_0);
+    NumDependences = ConstantInt::get(Int32, 0);
+    PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
+    DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
   Value *HaveNowaitClauseVal =
       ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
@@ -2236,10 +2236,10 @@ CallInst *OpenMPIRBuilder::createOMPInteropDestroy(
 
 CallInst *OpenMPIRBuilder::createOMPInteropUse(const LocationDescription &Loc,
                                                Value *InteropVar,
-                                               llvm::Value *Device,
-                                               llvm::Value *NumDependences,
-                                               llvm::Value *DependenceAddress,
-                                               int HaveNowaitClause) {
+                                               Value *Device,
+                                               Value *NumDependences,
+                                               Value *DependenceAddress,
+                                               bool HaveNowaitClause) {
   IRBuilder<>::InsertPointGuard IPG(Builder);
   Builder.restoreIP(Loc.IP);
   Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
@@ -2248,9 +2248,9 @@ CallInst *OpenMPIRBuilder::createOMPInteropUse(const LocationDescription &Loc,
   if (Device == NULL)
     Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
   if (NumDependences == nullptr) {
-    NumDependences = ConstantInt::get(M.getContext(), APInt(32, 0, true));
-    PointerType *PointerTy_0 = llvm::Type::getInt8PtrTy(M.getContext());
-    DependenceAddress = ConstantPointerNull::get(PointerTy_0);
+    NumDependences = ConstantInt::get(Int32, 0);
+    PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
+    DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
   Value *HaveNowaitClauseVal =
       ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));

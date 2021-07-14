@@ -791,10 +791,10 @@ public:
   ///
   /// \returns CallInst to the kmpc_interop_init call
   CallInst *
-  createOMPInteropInit(const LocationDescription &Loc, llvm::Value *InteropVar,
-                       OMPInteropType InteropType, llvm::Value *Device,
-                       llvm::Value *NumDependences,
-                       llvm::Value *DependenceAddress, int HaveNowaitClause);
+  createOMPInteropInit(const LocationDescription &Loc, Value *InteropVar,
+                       omp::OMPInteropType InteropType, Value *Device,
+                       Value *NumDependences,
+                       Value *DependenceAddress, bool HaveNowaitClause);
 
   /// Create a runtime call for kmpc_interop_destroy
   ///
@@ -807,11 +807,11 @@ public:
   ///
   /// \returns CallInst to the kmpc_interop_destroy call
   CallInst *createOMPInteropDestroy(const LocationDescription &Loc,
-                                    llvm::Value *InteropVar,
-                                    llvm::Value *Device,
-                                    llvm::Value *NumDependences,
-                                    llvm::Value *DependenceAddress,
-                                    int HaveNowaitClause);
+                                    Value *InteropVar,
+                                    Value *Device,
+                                    Value *NumDependences,
+                                    Value *DependenceAddress,
+                                    bool HaveNowaitClause);
 
   /// Create a runtime call for kmpc_interop_use
   ///
@@ -824,10 +824,10 @@ public:
   ///
   /// \returns CallInst to the kmpc_interop_use call
   CallInst *createOMPInteropUse(const LocationDescription &Loc,
-                                llvm::Value *InteropVar, llvm::Value *Device,
-                                llvm::Value *NumDependences,
-                                llvm::Value *DependenceAddress,
-                                int HaveNowaitClause);
+                                Value *InteropVar, Value *Device,
+                                Value *NumDependences,
+                                Value *DependenceAddress,
+                                bool HaveNowaitClause);
 
   /// Declarations for LLVM-IR types (simple, array, function and structure) are
   /// The `omp target` interface

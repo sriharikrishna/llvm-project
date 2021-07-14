@@ -6306,11 +6306,6 @@ void CodeGenFunction::EmitOMPInteropDirective(const OMPInteropDirective &S) {
   if (const auto *C = S.getSingleClause<OMPDeviceClause>())
     Device = EmitScalarExpr(C->getDevice());
 
-  int DependClauseCount = 0;
-  for (const auto *DC : S.getClausesOfKind<OMPDependClause>())
-    DependClauseCount++;
-  assert(DependClauseCount <= 1 && "Multiple OMPDependClause not supported.");
-
   llvm::Value *NumDependences = nullptr;
   llvm::Value *DependenceAddress = nullptr;
   if (const auto *DC = S.getSingleClause<OMPDependClause>()) {
@@ -6325,37 +6320,35 @@ void CodeGenFunction::EmitOMPInteropDirective(const OMPInteropDirective &S) {
         DependencePair.second.getPointer(), CGM.Int8PtrTy);
   }
 
-  int HaveNowaitClause = 0;
-  if (S.getSingleClause<OMPNowaitClause>())
-    HaveNowaitClause = 1;
+  bool HaveNowaitClause = S.hasClausesOfKind<OMPNowaitClause>();
 
   if (const auto *C = S.getSingleClause<OMPInitClause>()) {
     llvm::Value *InteropvarPtr =
-        (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
-    llvm::OMPInteropType InteropType = llvm::OMPInteropType::Unknown;
+        EmitLValue(C->getInteropVar()).getPointer(*this);
+    llvm::omp::OMPInteropType InteropType = llvm::omp::OMPInteropType::Unknown;
     if (C->getIsTarget())
-      InteropType = llvm::OMPInteropType::Target;
+      InteropType = llvm::omp::OMPInteropType::Target;
     else if (C->getIsTargetSync())
-      InteropType = llvm::OMPInteropType::TargetSync;
+      InteropType = llvm::omp::OMPInteropType::TargetSync;
     OMPBuilder.createOMPInteropInit(Builder, InteropvarPtr, InteropType, Device,
                                     NumDependences, DependenceAddress,
                                     HaveNowaitClause);
   } else if (const auto *C = S.getSingleClause<OMPDestroyClause>()) {
     llvm::Value *InteropvarPtr =
-        (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
+        EmitLValue(C->getInteropVar()).getPointer(*this);
     OMPBuilder.createOMPInteropDestroy(Builder, InteropvarPtr, Device,
                                        NumDependences, DependenceAddress,
                                        HaveNowaitClause);
   } else if (const auto *C = S.getSingleClause<OMPUseClause>()) {
     llvm::Value *InteropvarPtr =
-        (EmitLValue(C->getInteropVar()).getAddress(*this)).getPointer();
+        EmitLValue(C->getInteropVar()).getPointer(*this);
     OMPBuilder.createOMPInteropUse(Builder, InteropvarPtr, Device,
                                    NumDependences, DependenceAddress,
                                    HaveNowaitClause);
-  } else if (HaveNowaitClause == true) {
-    llvm_unreachable("Nowait clause is used separately in Interop Directive.");
+  } else if(HaveNowaitClause == true) {
+    assert("Nowait clause is used separately in OMPInteropDirective.");
   } else {
-    llvm_unreachable("Missing Interop clauses.");
+    assert("Unhandled or missing clause for OMPInteropDirective ");
   }
 }
 
