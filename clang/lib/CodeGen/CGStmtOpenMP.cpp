@@ -6320,7 +6320,11 @@ void CodeGenFunction::EmitOMPInteropDirective(const OMPInteropDirective &S) {
         DependencePair.second.getPointer(), CGM.Int8PtrTy);
   }
 
-  bool HaveNowaitClause = S.hasClausesOfKind<OMPNowaitClause>();
+  if (S.hasClausesOfKind<OMPNowaitClause>() &&
+      !(S.getSingleClause<OMPInitClause>() ||
+        S.getSingleClause<OMPDestroyClause>() ||
+        S.getSingleClause<OMPUseClause>()))
+    assert("OMPNowaitClause clause is used separately in OMPInteropDirective.");
 
   if (const auto *C = S.getSingleClause<OMPInitClause>()) {
     llvm::Value *InteropvarPtr =
@@ -6332,23 +6336,19 @@ void CodeGenFunction::EmitOMPInteropDirective(const OMPInteropDirective &S) {
       InteropType = llvm::omp::OMPInteropType::TargetSync;
     OMPBuilder.createOMPInteropInit(Builder, InteropvarPtr, InteropType, Device,
                                     NumDependences, DependenceAddress,
-                                    HaveNowaitClause);
+                                    S.hasClausesOfKind<OMPNowaitClause>());
   } else if (const auto *C = S.getSingleClause<OMPDestroyClause>()) {
     llvm::Value *InteropvarPtr =
         EmitLValue(C->getInteropVar()).getPointer(*this);
     OMPBuilder.createOMPInteropDestroy(Builder, InteropvarPtr, Device,
                                        NumDependences, DependenceAddress,
-                                       HaveNowaitClause);
+                                       S.hasClausesOfKind<OMPNowaitClause>());
   } else if (const auto *C = S.getSingleClause<OMPUseClause>()) {
     llvm::Value *InteropvarPtr =
         EmitLValue(C->getInteropVar()).getPointer(*this);
     OMPBuilder.createOMPInteropUse(Builder, InteropvarPtr, Device,
                                    NumDependences, DependenceAddress,
-                                   HaveNowaitClause);
-  } else if(HaveNowaitClause == true) {
-    assert("Nowait clause is used separately in OMPInteropDirective.");
-  } else {
-    assert("Unhandled or missing clause for OMPInteropDirective ");
+                                   S.hasClausesOfKind<OMPNowaitClause>());
   }
 }
 
