@@ -5,16 +5,14 @@
  *===------------------------------------------------------------------------*/
 #include "machine.h"
 #include "atmi_runtime.h"
+#include "hsa_api.h"
 #include "internal.h"
 #include <cassert>
-#include <hsa.h>
-#include <hsa_ext_amd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
 
 extern ATLMachine g_atl_machine;
-extern hsa_region_t atl_cpu_kernarg_region;
 
 void ATLProcessor::addMemory(const ATLMemory &mem) {
   for (auto &mem_obj : memories_) {

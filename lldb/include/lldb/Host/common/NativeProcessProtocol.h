@@ -46,7 +46,7 @@ struct SVR4LibraryInfo {
 // NativeProcessProtocol
 class NativeProcessProtocol {
 public:
-  virtual ~NativeProcessProtocol() {}
+  virtual ~NativeProcessProtocol() = default;
 
   virtual Status Resume(const ResumeActionList &resume_actions) = 0;
 
@@ -86,6 +86,9 @@ public:
 
   Status ReadMemoryWithoutTrap(lldb::addr_t addr, void *buf, size_t size,
                                size_t &bytes_read);
+
+  virtual Status ReadMemoryTags(int32_t type, lldb::addr_t addr, size_t len,
+                                std::vector<uint8_t> &tags);
 
   /// Reads a null terminated string from memory.
   ///
@@ -214,7 +217,7 @@ public:
   // Callbacks for low-level process state changes
   class NativeDelegate {
   public:
-    virtual ~NativeDelegate() {}
+    virtual ~NativeDelegate() = default;
 
     virtual void InitializeDelegate(NativeProcessProtocol *process) = 0;
 
@@ -240,8 +243,12 @@ public:
     multiprocess = (1u << 0),
     fork = (1u << 1),
     vfork = (1u << 2),
+    pass_signals = (1u << 3),
+    auxv = (1u << 4),
+    libraries_svr4 = (1u << 5),
+    memory_tagging = (1u << 6),
 
-    LLVM_MARK_AS_BITMASK_ENUM(vfork)
+    LLVM_MARK_AS_BITMASK_ENUM(memory_tagging)
   };
 
   class Factory {

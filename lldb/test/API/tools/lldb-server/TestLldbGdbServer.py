@@ -17,7 +17,7 @@ from lldbsuite.support import seven
 from lldbsuite.test.decorators import *
 from lldbsuite.test.lldbtest import *
 from lldbsuite.test.lldbdwarf import *
-from lldbsuite.test import lldbutil
+from lldbsuite.test import lldbutil, lldbplatformutil
 
 
 class LldbGdbServerTestCase(gdbremote_testcase.GdbRemoteTestCaseBase, DwarfOpcodeParser):
@@ -974,6 +974,25 @@ class LldbGdbServerTestCase(gdbremote_testcase.GdbRemoteTestCaseBase, DwarfOpcod
         self.assertIsNotNone(supported_dict)
         self.assertTrue(len(supported_dict) > 0)
 
+    def test_qSupported_auvx(self):
+        expected = ('+' if lldbplatformutil.getPlatform()
+                    in ["freebsd", "linux", "netbsd"] else '-')
+        supported_dict = self.get_qSupported_dict()
+        self.assertEqual(supported_dict.get('qXfer:auxv:read', '-'), expected)
+
+    def test_qSupported_libraries_svr4(self):
+        expected = ('+' if lldbplatformutil.getPlatform()
+                    in ["freebsd", "linux", "netbsd"] else '-')
+        supported_dict = self.get_qSupported_dict()
+        self.assertEqual(supported_dict.get('qXfer:libraries-svr4:read', '-'),
+                         expected)
+
+    def test_qSupported_QPassSignals(self):
+        expected = ('+' if lldbplatformutil.getPlatform()
+                    in ["freebsd", "linux", "netbsd"] else '-')
+        supported_dict = self.get_qSupported_dict()
+        self.assertEqual(supported_dict.get('QPassSignals', '-'), expected)
+
     @add_test_categories(["fork"])
     def test_qSupported_fork_events(self):
         supported_dict = (
@@ -1005,6 +1024,14 @@ class LldbGdbServerTestCase(gdbremote_testcase.GdbRemoteTestCaseBase, DwarfOpcod
         self.assertEqual(supported_dict.get('multiprocess', '-'), '-')
         self.assertEqual(supported_dict.get('fork-events', '-'), '-')
         self.assertEqual(supported_dict.get('vfork-events', '-'), '-')
+
+    # We need to be able to self.runCmd to get cpuinfo,
+    # which is not possible when using a remote platform.
+    @skipIfRemote
+    def test_qSupported_memory_tagging(self):
+        supported_dict = self.get_qSupported_dict()
+        self.assertEqual(supported_dict.get("memory-tagging", '-'),
+                         '+' if self.isAArch64MTE() else '-')
 
     @skipIfWindows # No pty support to test any inferior output
     def test_written_M_content_reads_back_correctly(self):

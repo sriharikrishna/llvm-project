@@ -55,7 +55,8 @@ class X86TTIImpl : public BasicTTIImplBase<X86TTIImpl> {
       X86::FeatureFastSHLDRotate,
       X86::FeatureFastScalarShiftMasks,
       X86::FeatureFastVectorShiftMasks,
-      X86::FeatureFastVariableShuffle,
+      X86::FeatureFastVariableCrossLaneShuffle,
+      X86::FeatureFastVariablePerLaneShuffle,
       X86::FeatureFastVectorFSQRT,
       X86::FeatureLEAForSP,
       X86::FeatureLEAUsesAG,
@@ -140,8 +141,9 @@ public:
                                      const Instruction *I = nullptr);
   InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
                                      unsigned Index);
-  unsigned getScalarizationOverhead(VectorType *Ty, const APInt &DemandedElts,
-                                    bool Insert, bool Extract);
+  InstructionCost getScalarizationOverhead(VectorType *Ty,
+                                           const APInt &DemandedElts,
+                                           bool Insert, bool Extract);
   InstructionCost getMemoryOpCost(unsigned Opcode, Type *Src,
                                   MaybeAlign Alignment, unsigned AddressSpace,
                                   TTI::TargetCostKind CostKind,
@@ -179,13 +181,13 @@ public:
                                         TTI::TargetCostKind CostKind);
 
   InstructionCost getArithmeticReductionCost(
-      unsigned Opcode, VectorType *Ty, bool IsPairwiseForm,
+      unsigned Opcode, VectorType *Ty,
       TTI::TargetCostKind CostKind = TTI::TCK_SizeAndLatency);
 
   InstructionCost getMinMaxCost(Type *Ty, Type *CondTy, bool IsUnsigned);
 
   InstructionCost getMinMaxReductionCost(VectorType *Ty, VectorType *CondTy,
-                                         bool IsPairwiseForm, bool IsUnsigned,
+                                         bool IsUnsigned,
                                          TTI::TargetCostKind CostKind);
 
   InstructionCost getInterleavedMemoryOpCost(

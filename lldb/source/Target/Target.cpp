@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "lldb/Target/Target.h"
-#include "Plugins/ExpressionParser/Clang/ClangModulesDeclVendor.h"
 #include "lldb/Breakpoint/BreakpointIDList.h"
 #include "lldb/Breakpoint/BreakpointPrecondition.h"
 #include "lldb/Breakpoint/BreakpointResolver.h"
@@ -42,6 +41,7 @@
 #include "lldb/Symbol/Function.h"
 #include "lldb/Symbol/ObjectFile.h"
 #include "lldb/Symbol/Symbol.h"
+#include "lldb/Target/ABI.h"
 #include "lldb/Target/Language.h"
 #include "lldb/Target/LanguageRuntime.h"
 #include "lldb/Target/Process.h"
@@ -371,9 +371,14 @@ BreakpointSP Target::CreateBreakpoint(const FileSpecList *containingModules,
   if (move_to_nearest_code == eLazyBoolCalculate)
     move_to_nearest_code = GetMoveToNearestCode() ? eLazyBoolYes : eLazyBoolNo;
 
+  SourceLocationSpec location_spec(remapped_file, line_no, column,
+                                   check_inlines,
+                                   !static_cast<bool>(move_to_nearest_code));
+  if (!location_spec)
+    return nullptr;
+
   BreakpointResolverSP resolver_sp(new BreakpointResolverFileLine(
-      nullptr, remapped_file, line_no, column, offset, check_inlines,
-      skip_prologue, !static_cast<bool>(move_to_nearest_code)));
+      nullptr, offset, skip_prologue, location_spec));
   return CreateBreakpoint(filter_sp, resolver_sp, internal, hardware, true);
 }
 
@@ -819,6 +824,11 @@ WatchpointSP Target::CreateWatchpoint(lldb::addr_t addr, size_t size,
   // Grab the list mutex while doing operations.
   const bool notify = false; // Don't notify about all the state changes we do
                              // on creating the watchpoint.
+
+  // Mask off ignored bits from watchpoint address.
+  if (ABISP abi = m_process_sp->GetABI())
+    addr = abi->FixDataAddress(addr);
+
   std::unique_lock<std::recursive_mutex> lock;
   this->GetWatchpointList().GetListMutex(lock);
   WatchpointSP matched_sp = m_watchpoint_list.FindByAddress(addr);
@@ -1149,9 +1159,7 @@ bool Target::RemoveAllWatchpoints(bool end_to_end) {
   if (!ProcessIsValid())
     return false;
 
-  size_t num_watchpoints = m_watchpoint_list.GetSize();
-  for (size_t i = 0; i < num_watchpoints; ++i) {
-    WatchpointSP wp_sp = m_watchpoint_list.GetByIndex(i);
+  for (WatchpointSP wp_sp : m_watchpoint_list.Watchpoints()) {
     if (!wp_sp)
       return false;
 
@@ -1180,9 +1188,7 @@ bool Target::DisableAllWatchpoints(bool end_to_end) {
   if (!ProcessIsValid())
     return false;
 
-  size_t num_watchpoints = m_watchpoint_list.GetSize();
-  for (size_t i = 0; i < num_watchpoints; ++i) {
-    WatchpointSP wp_sp = m_watchpoint_list.GetByIndex(i);
+  for (WatchpointSP wp_sp : m_watchpoint_list.Watchpoints()) {
     if (!wp_sp)
       return false;
 
@@ -1209,9 +1215,7 @@ bool Target::EnableAllWatchpoints(bool end_to_end) {
   if (!ProcessIsValid())
     return false;
 
-  size_t num_watchpoints = m_watchpoint_list.GetSize();
-  for (size_t i = 0; i < num_watchpoints; ++i) {
-    WatchpointSP wp_sp = m_watchpoint_list.GetByIndex(i);
+  for (WatchpointSP wp_sp : m_watchpoint_list.Watchpoints()) {
     if (!wp_sp)
       return false;
 
@@ -1227,9 +1231,7 @@ bool Target::ClearAllWatchpointHitCounts() {
   Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_WATCHPOINTS));
   LLDB_LOGF(log, "Target::%s\n", __FUNCTION__);
 
-  size_t num_watchpoints = m_watchpoint_list.GetSize();
-  for (size_t i = 0; i < num_watchpoints; ++i) {
-    WatchpointSP wp_sp = m_watchpoint_list.GetByIndex(i);
+  for (WatchpointSP wp_sp : m_watchpoint_list.Watchpoints()) {
     if (!wp_sp)
       return false;
 
@@ -1243,9 +1245,7 @@ bool Target::ClearAllWatchpointHistoricValues() {
   Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_WATCHPOINTS));
   LLDB_LOGF(log, "Target::%s\n", __FUNCTION__);
 
-  size_t num_watchpoints = m_watchpoint_list.GetSize();
-  for (size_t i = 0; i < num_watchpoints; ++i) {
-    WatchpointSP wp_sp = m_watchpoint_list.GetByIndex(i);
+  for (WatchpointSP wp_sp : m_watchpoint_list.Watchpoints()) {
     if (!wp_sp)
       return false;
 
@@ -1263,9 +1263,7 @@ bool Target::IgnoreAllWatchpoints(uint32_t ignore_count) {
   if (!ProcessIsValid())
     return false;
 
-  size_t num_watchpoints = m_watchpoint_list.GetSize();
-  for (size_t i = 0; i < num_watchpoints; ++i) {
-    WatchpointSP wp_sp = m_watchpoint_list.GetByIndex(i);
+  for (WatchpointSP wp_sp : m_watchpoint_list.Watchpoints()) {
     if (!wp_sp)
       return false;
 
@@ -1687,6 +1685,7 @@ bool Target::ModuleIsExcludedForUnconstrainedSearches(
 
 size_t Target::ReadMemoryFromFileCache(const Address &addr, void *dst,
                                        size_t dst_len, Status &error) {
+  LLDB_SCOPED_TIMER();
   SectionSP section_sp(addr.GetSection());
   if (section_sp) {
     // If the contents of this section are encrypted, the on-disk file is
@@ -1753,19 +1752,30 @@ size_t Target::ReadMemory(const Address &addr, void *dst, size_t dst_len,
   if (!resolved_addr.IsValid())
     resolved_addr = addr;
 
-  bool is_readonly = false;
+  // If we read from the file cache but can't get as many bytes as requested,
+  // we keep the result around in this buffer, in case this result is the
+  // best we can do.
+  std::unique_ptr<uint8_t[]> file_cache_read_buffer;
+  size_t file_cache_bytes_read = 0;
+
   // Read from file cache if read-only section.
   if (!force_live_memory && resolved_addr.IsSectionOffset()) {
     SectionSP section_sp(resolved_addr.GetSection());
     if (section_sp) {
       auto permissions = Flags(section_sp->GetPermissions());
-      is_readonly = !permissions.Test(ePermissionsWritable) &&
-                    permissions.Test(ePermissionsReadable);
-    }
-    if (is_readonly) {
-      bytes_read = ReadMemoryFromFileCache(resolved_addr, dst, dst_len, error);
-      if (bytes_read > 0)
-        return bytes_read;
+      bool is_readonly = !permissions.Test(ePermissionsWritable) &&
+                         permissions.Test(ePermissionsReadable);
+      if (is_readonly) {
+        file_cache_bytes_read =
+            ReadMemoryFromFileCache(resolved_addr, dst, dst_len, error);
+        if (file_cache_bytes_read == dst_len)
+          return file_cache_bytes_read;
+        else if (file_cache_bytes_read > 0) {
+          file_cache_read_buffer =
+              std::make_unique<uint8_t[]>(file_cache_bytes_read);
+          std::memcpy(file_cache_read_buffer.get(), dst, file_cache_bytes_read);
+        }
+      }
     }
   }
 
@@ -1804,7 +1814,14 @@ size_t Target::ReadMemory(const Address &addr, void *dst, size_t dst_len,
     }
   }
 
-  if (!is_readonly && resolved_addr.IsSectionOffset()) {
+  if (file_cache_read_buffer && file_cache_bytes_read > 0) {
+    // Reading from the process failed. If we've previously succeeded in reading
+    // something from the file cache, then copy that over and return that.
+    std::memcpy(dst, file_cache_read_buffer.get(), file_cache_bytes_read);
+    return file_cache_bytes_read;
+  }
+
+  if (!file_cache_read_buffer && resolved_addr.IsSectionOffset()) {
     // If we didn't already try and read from the object file cache, then try
     // it after failing to read from the process.
     return ReadMemoryFromFileCache(resolved_addr, dst, dst_len, error);
@@ -2523,23 +2540,6 @@ SourceManager &Target::GetSourceManager() {
   return *m_source_manager_up;
 }
 
-ClangModulesDeclVendor *Target::GetClangModulesDeclVendor() {
-  static std::mutex s_clang_modules_decl_vendor_mutex; // If this is contended
-                                                       // we can make it
-                                                       // per-target
-
-  {
-    std::lock_guard<std::mutex> guard(s_clang_modules_decl_vendor_mutex);
-
-    if (!m_clang_modules_decl_vendor_up) {
-      m_clang_modules_decl_vendor_up.reset(
-          ClangModulesDeclVendor::Create(*this));
-    }
-  }
-
-  return m_clang_modules_decl_vendor_up.get();
-}
-
 Target::StopHookSP Target::CreateStopHook(StopHook::StopHookKind kind) {
   lldb::user_id_t new_uid = ++m_stop_hook_next_id;
   Target::StopHookSP stop_hook_sp;
@@ -2974,7 +2974,7 @@ Status Target::Launch(ProcessLaunchInfo &launch_info, Stream *stream) {
   // If we're not already connected to the process, and if we have a platform
   // that can launch a process for debugging, go ahead and do that here.
   if (state != eStateConnected && platform_sp &&
-      platform_sp->CanDebugProcess()) {
+      platform_sp->CanDebugProcess() && !launch_info.IsScriptedProcess()) {
     LLDB_LOGF(log, "Target::%s asking the platform to debug the process",
               __FUNCTION__);
 
@@ -3077,26 +3077,37 @@ Status Target::Launch(ProcessLaunchInfo &launch_info, Stream *stream) {
 
 void Target::SetTrace(const TraceSP &trace_sp) { m_trace_sp = trace_sp; }
 
-TraceSP &Target::GetTrace() { return m_trace_sp; }
+TraceSP Target::GetTrace() { return m_trace_sp; }
 
-llvm::Expected<TraceSP &> Target::GetTraceOrCreate() {
-  if (!m_trace_sp && m_process_sp) {
-    llvm::Expected<TraceSupportedResponse> trace_type =
-        m_process_sp->TraceSupported();
-    if (!trace_type)
-      return llvm::createStringError(
-          llvm::inconvertibleErrorCode(), "Tracing is not supported. %s",
-          llvm::toString(trace_type.takeError()).c_str());
-    if (llvm::Expected<TraceSP> trace_sp =
-            Trace::FindPluginForLiveProcess(trace_type->name, *m_process_sp))
-      m_trace_sp = *trace_sp;
-    else
-      return llvm::createStringError(
-          llvm::inconvertibleErrorCode(),
-          "Couldn't start tracing the process. %s",
-          llvm::toString(trace_sp.takeError()).c_str());
-  }
+llvm::Expected<TraceSP> Target::CreateTrace() {
+  if (!m_process_sp)
+    return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                   "A process is required for tracing");
+  if (m_trace_sp)
+    return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                   "A trace already exists for the target");
+
+  llvm::Expected<TraceSupportedResponse> trace_type =
+      m_process_sp->TraceSupported();
+  if (!trace_type)
+    return llvm::createStringError(
+        llvm::inconvertibleErrorCode(), "Tracing is not supported. %s",
+        llvm::toString(trace_type.takeError()).c_str());
+  if (llvm::Expected<TraceSP> trace_sp =
+          Trace::FindPluginForLiveProcess(trace_type->name, *m_process_sp))
+    m_trace_sp = *trace_sp;
+  else
+    return llvm::createStringError(
+        llvm::inconvertibleErrorCode(),
+        "Couldn't create a Trace object for the process. %s",
+        llvm::toString(trace_sp.takeError()).c_str());
   return m_trace_sp;
+}
+
+llvm::Expected<TraceSP> Target::GetTraceOrCreate() {
+  if (m_trace_sp)
+    return m_trace_sp;
+  return CreateTrace();
 }
 
 Status Target::Attach(ProcessAttachInfo &attach_info, Stream *stream) {

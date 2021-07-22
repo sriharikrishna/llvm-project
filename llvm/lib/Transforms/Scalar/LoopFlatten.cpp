@@ -111,33 +111,18 @@ static bool findLoopComponents(
     LLVM_DEBUG(dbgs() << "Exiting and latch block are different\n");
     return false;
   }
-  // Latch block must end in a conditional branch.
-  BackBranch = dyn_cast<BranchInst>(Latch->getTerminator());
-  if (!BackBranch || !BackBranch->isConditional()) {
-    LLVM_DEBUG(dbgs() << "Could not find back-branch\n");
-    return false;
-  }
-  IterationInstructions.insert(BackBranch);
-  LLVM_DEBUG(dbgs() << "Found back branch: "; BackBranch->dump());
-  bool ContinueOnTrue = L->contains(BackBranch->getSuccessor(0));
 
   // Find the induction PHI. If there is no induction PHI, we can't do the
   // transformation. TODO: could other variables trigger this? Do we have to
   // search for the best one?
-  InductionPHI = nullptr;
-  for (PHINode &PHI : L->getHeader()->phis()) {
-    InductionDescriptor ID;
-    if (InductionDescriptor::isInductionPHI(&PHI, L, SE, ID)) {
-      InductionPHI = &PHI;
-      LLVM_DEBUG(dbgs() << "Found induction PHI: "; InductionPHI->dump());
-      break;
-    }
-  }
+  InductionPHI = L->getInductionVariable(*SE);
   if (!InductionPHI) {
     LLVM_DEBUG(dbgs() << "Could not find induction PHI\n");
     return false;
   }
+  LLVM_DEBUG(dbgs() << "Found induction PHI: "; InductionPHI->dump());
 
+  bool ContinueOnTrue = L->contains(Latch->getTerminator()->getSuccessor(0));
   auto IsValidPredicate = [&](ICmpInst::Predicate Pred) {
     if (ContinueOnTrue)
       return Pred == CmpInst::ICMP_NE || Pred == CmpInst::ICMP_ULT;
@@ -145,13 +130,17 @@ static bool findLoopComponents(
       return Pred == CmpInst::ICMP_EQ;
   };
 
-  // Find Compare and make sure it is valid
-  ICmpInst *Compare = dyn_cast<ICmpInst>(BackBranch->getCondition());
+  // Find Compare and make sure it is valid. getLatchCmpInst checks that the
+  // back branch of the latch is conditional.
+  ICmpInst *Compare = L->getLatchCmpInst();
   if (!Compare || !IsValidPredicate(Compare->getUnsignedPredicate()) ||
       Compare->hasNUsesOrMore(2)) {
     LLVM_DEBUG(dbgs() << "Could not find valid comparison\n");
     return false;
   }
+  BackBranch = cast<BranchInst>(Latch->getTerminator());
+  IterationInstructions.insert(BackBranch);
+  LLVM_DEBUG(dbgs() << "Found back branch: "; BackBranch->dump());
   IterationInstructions.insert(Compare);
   LLVM_DEBUG(dbgs() << "Found comparison: "; Compare->dump());
 
@@ -658,10 +647,10 @@ static bool FlattenLoopPair(FlattenInfo &FI, DominatorTree *DT, LoopInfo *LI,
   return DoFlattenLoopPair(FI, DT, LI, SE, AC, TTI);
 }
 
-bool Flatten(DominatorTree *DT, LoopInfo *LI, ScalarEvolution *SE,
+bool Flatten(LoopNest &LN, DominatorTree *DT, LoopInfo *LI, ScalarEvolution *SE,
              AssumptionCache *AC, TargetTransformInfo *TTI) {
   bool Changed = false;
-  for (auto *InnerLoop : LI->getLoopsInPreorder()) {
+  for (Loop *InnerLoop : LN.getLoops()) {
     auto *OuterLoop = InnerLoop->getParentLoop();
     if (!OuterLoop)
       continue;
@@ -671,15 +660,19 @@ bool Flatten(DominatorTree *DT, LoopInfo *LI, ScalarEvolution *SE,
   return Changed;
 }
 
-PreservedAnalyses LoopFlattenPass::run(Function &F,
-                                       FunctionAnalysisManager &AM) {
-  auto *DT = &AM.getResult<DominatorTreeAnalysis>(F);
-  auto *LI = &AM.getResult<LoopAnalysis>(F);
-  auto *SE = &AM.getResult<ScalarEvolutionAnalysis>(F);
-  auto *AC = &AM.getResult<AssumptionAnalysis>(F);
-  auto *TTI = &AM.getResult<TargetIRAnalysis>(F);
+PreservedAnalyses LoopFlattenPass::run(LoopNest &LN, LoopAnalysisManager &LAM,
+                                       LoopStandardAnalysisResults &AR,
+                                       LPMUpdater &U) {
 
-  if (!Flatten(DT, LI, SE, AC, TTI))
+  bool Changed = false;
+
+  // The loop flattening pass requires loops to be
+  // in simplified form, and also needs LCSSA. Running
+  // this pass will simplify all loops that contain inner loops,
+  // regardless of whether anything ends up being flattened.
+  Changed |= Flatten(LN, &AR.DT, &AR.LI, &AR.SE, &AR.AC, &AR.TTI);
+
+  if (!Changed)
     return PreservedAnalyses::all();
 
   return PreservedAnalyses::none();
@@ -724,5 +717,10 @@ bool LoopFlattenLegacyPass::runOnFunction(Function &F) {
   auto &TTIP = getAnalysis<TargetTransformInfoWrapperPass>();
   auto *TTI = &TTIP.getTTI(F);
   auto *AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
-  return Flatten(DT, LI, SE, AC, TTI);
+  bool Changed = false;
+  for (Loop *L : *LI) {
+    auto LN = LoopNest::getLoopNest(*L, *SE);
+    Changed |= Flatten(*LN, DT, LI, SE, AC, TTI);
+  }
+  return Changed;
 }

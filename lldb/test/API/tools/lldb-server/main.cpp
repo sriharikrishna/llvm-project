@@ -16,9 +16,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <thread>
 #include <time.h>
 #include <vector>
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 
 static const char *const PRINT_PID_COMMAND = "print-pid";
 
@@ -299,7 +303,7 @@ int main(int argc, char **argv) {
       else if (arg == "swap_chars")
         func_p = swap_chars;
       func_p();
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(TARGET_OS_WATCH) && !defined(TARGET_OS_TV)
     } else if (arg == "fork") {
       if (fork() == 0)
         _exit(0);

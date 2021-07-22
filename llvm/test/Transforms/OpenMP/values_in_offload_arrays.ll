@@ -1,4 +1,3 @@
-; RUN: opt -S -openmp-opt-cgscc -aa-pipeline=basic-aa -openmp-hide-memory-transfer-latency -debug-only=openmp-opt < %s 2>&1 | FileCheck %s
 ; RUN: opt -S -passes=openmp-opt-cgscc -aa-pipeline=basic-aa -openmp-hide-memory-transfer-latency -debug-only=openmp-opt < %s 2>&1 | FileCheck %s
 ; REQUIRES: asserts
 
@@ -71,3 +70,8 @@ declare void @__tgt_target_data_begin_mapper(%struct.ident_t*, i64, i32, i8**, i
 declare void @__tgt_target_data_end_mapper(%struct.ident_t*, i64, i32, i8**, i8**, i64*, i64*, i8**, i8**)
 
 declare dso_local i32 @rand(...)
+
+!llvm.module.flags = !{!0}
+
+!0 = !{i32 7, !"openmp", i32 50}
+
