@@ -33,12 +33,16 @@ void busy_work() {
 
 typedef void* cudaStream_t;
 
-extern "C" {
+#ifdef __cplusplus
+extern "C"
+#endif
 int cudaMalloc(void **, size_t);
 int cudaMemcpy(void *dst, const void *src, size_t count, int kind);
 int cudaMemcpyAsync(void *dst, const void *src, size_t count, int kind, cudaStream_t stream );
 int cudaStreamSynchronize(cudaStream_t stream);
+#ifdef __cplusplus
 }
+#endif
 
 int main() {
 
@@ -114,10 +118,10 @@ int main() {
     VERBOSE("[%lf] After interop use: %i\n", omp_get_wtime(), R2);
     
     cudaStream_t stream = (omp_get_interop_ptr(interop, omp_ipr_targetsync, NULL));
-    VERBOSE("After get stream %i: R2 %i\n", stream, R2);
+    VERBOSE("After get stream %p: R2 %i\n", stream, R2);
 
     int cudaMemcpyDefault = 4;
-    VERBOSE("Issue CUDA async memcpy       on stream (=%i)\n", stream);
+    VERBOSE("Issue CUDA async memcpy       on stream (=%p)\n", stream);
     int r = cudaMemcpyAsync(&R1, &R0, sizeof(int), cudaMemcpyDefault, stream);
     VERBOSE("[%lf] After cuda memcpy async [%i]: R2 %i\n", omp_get_wtime(), r, R2);
 

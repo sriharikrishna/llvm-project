@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 #include "interop.h"
 #include "private.h"
 
@@ -41,6 +40,7 @@ static void __kmpc_interop_type_mismatch(omp_interop_property_t property,
     *err = __kmpc_interop_get_property_err_type(property);
 }
 
+///TODO Use vendor_id to look up the string
 static const char *__kmpc_interop_vendor_id_to_str(intptr_t vendor_id) {
   return "CUDA_driver";
 }
@@ -135,6 +135,7 @@ static bool __kmpc_interop_get_property_check(omp_interop_val_t **interop_ptr,
   return true;
 }
 
+
 #define __OMP_GET_INTEROP_TY(RETURN_TYPE, SUFFIX)                              \
 RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
                                  omp_interop_property_t property_id,           \
@@ -147,7 +148,6 @@ RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
     return __kmpc_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
                                                     err);                      \
 }
-
 __OMP_GET_INTEROP_TY(intptr_t, int)
 __OMP_GET_INTEROP_TY(void *, ptr)
 __OMP_GET_INTEROP_TY(const char *, str)
@@ -257,10 +257,6 @@ void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
   if (interop_val->interop_type == kmp_interop_type_tasksync) {
      __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
                          noalias_dep_list);
-    kmp_tasking_flags flags;
-    flags.target = 1;
-    flags.unshackled = 1;
-    kmp_int32 flags32 = *((kmp_int32*)&flags);
   }
 
   delete interop_ptr;

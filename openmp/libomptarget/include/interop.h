@@ -4,6 +4,18 @@
 #include <assert.h>
 #include "omptarget.h"
 
+#   if defined(_WIN32)
+#       define __KAI_KMPC_CONVENTION __cdecl
+#       ifndef __KMP_IMP
+#           define __KMP_IMP __declspec(dllimport)
+#       endif
+#   else
+#       define __KAI_KMPC_CONVENTION
+#       ifndef __KMP_IMP
+#           define __KMP_IMP
+#       endif
+#   endif	
+
 /// TODO: Include the `omp.h` of the current build
     /* OpenMP 5.1 interop */
     typedef intptr_t omp_intptr_t;
@@ -50,6 +62,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
     	/*!
      * The `omp_get_num_interop_properties` routine retrieves the number of implementation-defined properties available for an `omp_interop_t` object.
      */
