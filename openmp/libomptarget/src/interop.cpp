@@ -8,6 +8,7 @@
 
 
 #include "interop.h"
+#include "private.h"
 
 static omp_interop_rc_t
 __kmpc_interop_get_property_err_type(omp_interop_property_t property) {
@@ -171,21 +172,6 @@ __OMP_GET_INTEROP_TY3(const char*, rc_desc)
 #undef __OMP_GET_INTEROP_TY3
 
 typedef int64_t kmp_int64;
-
-typedef kmp_int32 (*kmp_routine_entry_t)(kmp_int32, void *);
-
-int waitForDeps(DeviceTy &Device, __tgt_async_info *AsyncInfo);
-int recordEvent(DeviceTy &Device, __tgt_async_info *AsyncInfo);
-int queryAndWait(DeviceTy &Device, __tgt_async_info *AsyncInfo);
-
-extern "C" {
-int __kmpc_set_async_info(kmp_int32 device_id, void *async_info);
-
-int __kmpc_set_async_info(kmp_int32 device_id, void *async_info) {
-   __tgt_async_info * AsyncInfo = (__tgt_async_info *) async_info;
-  return 1;
-}
-}
 
 #ifdef __cplusplus
  extern "C" {

@@ -90,11 +90,6 @@ typedef int (*TargetDataFuncPtrTy)(ident_t *, DeviceTy &, int32_t, void **,
 extern "C" {
 #endif
 
-/// OMG THE DUPLICATION IN THIS WEB OF LIBRARIES IS RIDICULES AND THE
-/// DECLARATIONS ARE INCOMPATIBLE SO YOU CANNOT REUSE ANYTHING EVEN IF YOU WANTED
-/// TO ...
-///
-///{
 /*!
  * The ident structure that describes a source location.
  * The struct is identical to the one in the kmp.h file.
@@ -113,7 +108,6 @@ typedef struct kmp_depend_info {
     bool mtx : 1;
   } flags;
 } kmp_depend_info_t;
-///}
 
 // functions that extract info from libomp; keep in sync
 int omp_get_default_device(void) __attribute__((weak));
