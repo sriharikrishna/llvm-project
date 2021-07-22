@@ -381,8 +381,7 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
         cast<OMPTargetTeamsDistributeSimdDirective>(*S));
     break;
   case Stmt::OMPInteropDirectiveClass:
-    EmitOMPInteropDirective(
-        cast<OMPInteropDirective>(*S));
+    EmitOMPInteropDirective(cast<OMPInteropDirective>(*S));
     break;
   case Stmt::OMPDispatchDirectiveClass:
     llvm_unreachable("Dispatch directive not supported yet.");

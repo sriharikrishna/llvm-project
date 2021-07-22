@@ -782,45 +782,54 @@ public:
   /// Create a runtime call for kmpc_interop_init
   ///
   /// \param Loc The insert and source location description.
-  /// \param Size Size of allocated memory space
-  /// \param Allocator Allocator information instruction
-  /// \param Name Name of call Instruction for OMP_alloc
+  /// \param InteropVar variable to be allocated
+  /// \param InteropType type of interop operation
+  /// \param Device devide to which offloading will occur
+  /// \param NumDependences  number of dependence variables
+  /// \param DependenceAddress pointer to dependence variables
+  /// \param HaveNowaitClause does nowait clause exist
   ///
-  /// \returns CallInst to the OMP_Interop_int  call
-  CallInst *createOMPInteropInit(const LocationDescription &Loc, 
-		                 llvm::Value* InteropVar,
-				 OMPInteropType InteropType,
-				 llvm::Value* Device, 
-				 llvm::Value* NumDependences, 
-				 llvm::Value* DependenceAddress, int HaveNowaitClause);
+  /// \returns CallInst to the kmpc_interop_init call
+  CallInst *
+  createOMPInteropInit(const LocationDescription &Loc, Value *InteropVar,
+                       omp::OMPInteropType InteropType, Value *Device,
+                       Value *NumDependences,
+                       Value *DependenceAddress, bool HaveNowaitClause);
 
   /// Create a runtime call for kmpc_interop_destroy
   ///
   /// \param Loc The insert and source location description.
-  /// \param Size Size of allocated memory space
-  /// \param Allocator Allocator information instruction
-  /// \param Name Name of call Instruction for OMP_alloc
+  /// \param InteropVar variable to be allocated
+  /// \param Device devide to which offloading will occur
+  /// \param NumDependences  number of dependence variables
+  /// \param DependenceAddress pointer to dependence variables
+  /// \param HaveNowaitClause does nowait clause exist
   ///
-  /// \returns CallInst to the OMP_Interop_int  call
-  CallInst *createOMPInteropDestroy(const LocationDescription &Loc, 
-		                 llvm::Value* InteropVar,
-				 llvm::Value* Device, 
-				 llvm::Value* NumDependences, 
-				 llvm::Value* DependenceAddress, int HaveNowaitClause);
+  /// \returns CallInst to the kmpc_interop_destroy call
+  CallInst *createOMPInteropDestroy(const LocationDescription &Loc,
+                                    Value *InteropVar,
+                                    Value *Device,
+                                    Value *NumDependences,
+                                    Value *DependenceAddress,
+                                    bool HaveNowaitClause);
 
   /// Create a runtime call for kmpc_interop_use
   ///
   /// \param Loc The insert and source location description.
-  /// \param Size Size of allocated memory space
-  /// \param Allocator Allocator information instruction
-  /// \param Name Name of call Instruction for OMP_alloc
+  /// \param InteropVar variable to be allocated
+  /// \param Device devide to which offloading will occur
+  /// \param NumDependences  number of dependence variables
+  /// \param DependenceAddress pointer to dependence variables
+  /// \param HaveNowaitClause does nowait clause exist
   ///
-  /// \returns CallInst to the OMP_Interop_int  call
-  CallInst *createOMPInteropUse(const LocationDescription &Loc, 
-		                 llvm::Value* InteropVar,
-				 llvm::Value* Device, 
-				 llvm::Value* NumDependences, 
-				 llvm::Value* DependenceAddress, int HaveNowaitClause);
+  /// \returns CallInst to the kmpc_interop_use call
+  CallInst *createOMPInteropUse(const LocationDescription &Loc,
+                                Value *InteropVar, Value *Device,
+                                Value *NumDependences,
+                                Value *DependenceAddress,
+                                bool HaveNowaitClause);
+
+  /// Declarations for LLVM-IR types (simple, array, function and structure) are
   /// The `omp target` interface
   ///
   /// For more information about the usage of this interface,

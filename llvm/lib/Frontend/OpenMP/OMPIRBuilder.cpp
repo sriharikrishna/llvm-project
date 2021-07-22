@@ -2172,66 +2172,90 @@ CallInst *OpenMPIRBuilder::createOMPFree(const LocationDescription &Loc,
   return Builder.CreateCall(Fn, Args, Name);
 }
 
-CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc, Value *InteropVar, OMPInteropType InteropType, llvm::Value* Device, llvm::Value* NumDependences, llvm::Value* DependenceAddress, int HaveNowaitClause){
+CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc,
+                                                Value *InteropVar,
+                                                omp::OMPInteropType InteropType,
+                                                Value *Device,
+                                                Value *NumDependences,
+                                                Value *DependenceAddress,
+                                                bool HaveNowaitClause) {
   IRBuilder<>::InsertPointGuard IPG(Builder);
   Builder.restoreIP(Loc.IP);
 
   Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
   Value *Ident = getOrCreateIdent(SrcLocStr);
   Value *ThreadId = getOrCreateThreadID(Ident);
-  if(Device==NULL)
-	  Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
-  ConstantInt *InteropTypeVal = ConstantInt::get(M.getContext(), APInt(64, (int) InteropType, true));
-  if(NumDependences==nullptr){
-     NumDependences = ConstantInt::get(M.getContext(), APInt(32, 0, true));
-     PointerType* PointerTy_0 = llvm::Type::getInt8PtrTy(M.getContext());
-     DependenceAddress = ConstantPointerNull::get(PointerTy_0);
+  if (Device == NULL)
+    Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
+  Constant *InteropTypeVal =
+      ConstantInt::get(Int64, (int)InteropType);
+  if (NumDependences == nullptr) {
+    NumDependences = ConstantInt::get(Int32, 0);
+    PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
+    DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
-  Value *HaveNowaitClauseVal = ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
-  Value *Args[] = {Ident, ThreadId, InteropVar, InteropTypeVal, Device, NumDependences, DependenceAddress, HaveNowaitClauseVal};
-  
+  Value *HaveNowaitClauseVal =
+      ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
+  Value *Args[] = {
+      Ident,  ThreadId,       InteropVar,        InteropTypeVal,
+      Device, NumDependences, DependenceAddress, HaveNowaitClauseVal};
+
   Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_interop_init);
 
   return Builder.CreateCall(Fn, Args);
 }
 
-CallInst *OpenMPIRBuilder::createOMPInteropDestroy(const LocationDescription &Loc, Value *InteropVar, llvm::Value* Device, llvm::Value* NumDependences, llvm::Value* DependenceAddress, int HaveNowaitClause){
+CallInst *OpenMPIRBuilder::createOMPInteropDestroy(
+    const LocationDescription &Loc, Value *InteropVar, Value *Device,
+    Value *NumDependences, Value *DependenceAddress,
+    bool HaveNowaitClause) {
   IRBuilder<>::InsertPointGuard IPG(Builder);
   Builder.restoreIP(Loc.IP);
 
   Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
   Value *Ident = getOrCreateIdent(SrcLocStr);
   Value *ThreadId = getOrCreateThreadID(Ident);
-  if(Device==NULL)
-          Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
-  if(NumDependences==nullptr){
-     NumDependences = ConstantInt::get(M.getContext(), APInt(32, 0, true));
-     PointerType* PointerTy_0 = llvm::Type::getInt8PtrTy(M.getContext());
-     DependenceAddress = ConstantPointerNull::get(PointerTy_0);
+  if (Device == NULL)
+    Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
+  if (NumDependences == nullptr) {
+    NumDependences = ConstantInt::get(Int32, 0);
+    PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
+    DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
-  Value *HaveNowaitClauseVal = ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
-  Value *Args[] = {Ident, ThreadId, InteropVar, Device, NumDependences, DependenceAddress, HaveNowaitClauseVal};
+  Value *HaveNowaitClauseVal =
+      ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
+  Value *Args[] = {
+      Ident,          ThreadId,          InteropVar,         Device,
+      NumDependences, DependenceAddress, HaveNowaitClauseVal};
 
   Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_interop_destroy);
 
   return Builder.CreateCall(Fn, Args);
 }
 
-CallInst *OpenMPIRBuilder::createOMPInteropUse(const LocationDescription &Loc, Value *InteropVar, llvm::Value* Device, llvm::Value* NumDependences, llvm::Value* DependenceAddress, int HaveNowaitClause){
+CallInst *OpenMPIRBuilder::createOMPInteropUse(const LocationDescription &Loc,
+                                               Value *InteropVar,
+                                               Value *Device,
+                                               Value *NumDependences,
+                                               Value *DependenceAddress,
+                                               bool HaveNowaitClause) {
   IRBuilder<>::InsertPointGuard IPG(Builder);
   Builder.restoreIP(Loc.IP);
   Constant *SrcLocStr = getOrCreateSrcLocStr(Loc);
   Value *Ident = getOrCreateIdent(SrcLocStr);
   Value *ThreadId = getOrCreateThreadID(Ident);
-  if(Device==NULL)
-          Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
-  if(NumDependences==nullptr){
-     NumDependences = ConstantInt::get(M.getContext(), APInt(32, 0, true));
-     PointerType* PointerTy_0 = llvm::Type::getInt8PtrTy(M.getContext());
-     DependenceAddress = ConstantPointerNull::get(PointerTy_0);
+  if (Device == NULL)
+    Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
+  if (NumDependences == nullptr) {
+    NumDependences = ConstantInt::get(Int32, 0);
+    PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
+    DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
-  Value *HaveNowaitClauseVal = ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
-  Value *Args[] = {Ident, ThreadId, InteropVar, Device, NumDependences, DependenceAddress, HaveNowaitClauseVal};
+  Value *HaveNowaitClauseVal =
+      ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
+  Value *Args[] = {
+      Ident,          ThreadId,          InteropVar,         Device,
+      NumDependences, DependenceAddress, HaveNowaitClauseVal};
 
   Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_interop_use);
 
