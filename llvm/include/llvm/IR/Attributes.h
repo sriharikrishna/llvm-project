@@ -346,6 +346,7 @@ public:
   Type *getByRefType() const;
   Type *getPreallocatedType() const;
   Type *getInAllocaType() const;
+  Type *getElementType() const;
   std::pair<unsigned, Optional<unsigned>> getAllocSizeArgs() const;
   std::pair<unsigned, unsigned> getVScaleRangeArgs() const;
   std::string getAsString(bool InAttrGrp = false) const;
@@ -714,6 +715,9 @@ public:
   /// Return the inalloca type for the specified function parameter.
   Type *getParamInAllocaType(unsigned ArgNo) const;
 
+  /// Return the elementtype type for the specified function parameter.
+  Type *getParamElementType(unsigned ArgNo) const;
+
   /// Get the stack alignment.
   MaybeAlign getStackAlignment(unsigned Index) const;
 
@@ -842,9 +846,8 @@ public:
   AttrBuilder &addAttribute(Attribute::AttrKind Val) {
     assert((unsigned)Val < Attribute::EndAttrKinds &&
            "Attribute out of range!");
-    // TODO: This should really assert isEnumAttrKind().
-    assert(!Attribute::isIntAttrKind(Val) &&
-           "Adding integer attribute without adding a value!");
+    assert(Attribute::isEnumAttrKind(Val) &&
+           "Adding integer/type attribute without an argument!");
     Attrs[Val] = true;
     return *this;
   }

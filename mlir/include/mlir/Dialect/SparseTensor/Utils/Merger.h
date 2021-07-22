@@ -21,15 +21,20 @@ namespace mlir {
 namespace sparse_tensor {
 
 /// Dimension level type for a tensor (undef means index does not appear).
-enum class Dim { kSparse, kDense, kSingle, kUndef };
+enum Dim { kSparse, kDense, kSingle, kUndef };
 
 /// Tensor expression kind.
-enum class Kind {
+enum Kind {
   // Leaf.
-  kTensor,
+  kTensor = 0,
   kInvariant,
-  kZero,
-  // Operation.
+  // Unary operations.
+  kAbsF,
+  kCeilF,
+  kFloorF,
+  kNegF,
+  kNegI,
+  // Binary operations.
   kMulF,
   kMulI,
   kDivF,
@@ -41,6 +46,10 @@ enum class Kind {
   kSubI,
   kAndI,
   kOrI,
+  kXorI,
+  kShrS, // signed
+  kShrU, // unsigned
+  kShlI,
 };
 
 /// Children subexpressions of tensor operations.
@@ -105,8 +114,7 @@ public:
         dims(t + 1, std::vector<Dim>(l, Dim::kUndef)) {}
 
   /// Adds a tensor expression. Returns its index.
-  unsigned addExp(Kind k, unsigned e0 = -1u, unsigned e1 = -1u,
-                  Value v = Value());
+  unsigned addExp(Kind k, unsigned e0, unsigned e1 = -1u, Value v = Value());
   unsigned addExp(Kind k, Value v) { return addExp(k, -1u, -1u, v); }
 
   /// Adds an iteration lattice point. Returns its index.
@@ -129,11 +137,10 @@ public:
   /// Returns the index of the new set.
   unsigned takeDisj(Kind kind, unsigned s0, unsigned s1);
 
-  /// Maps a zero operand over a lattice set, i.e. each lattice point on an
-  /// expression E is simply copied over, but with 0 OP E as new expression.
-  /// This is useful to deal with disjunctive, but non-commutative operators.
-  /// Returns the index of the new set.
-  unsigned mapZero(Kind kind, unsigned s0);
+  /// Maps the unary operator over the lattice set of the operand, i.e. each
+  /// lattice point on an expression E is simply copied over, but with OP E
+  /// as new expression. Returns the index of the new set.
+  unsigned mapSet(Kind kind, unsigned s0);
 
   /// Optimizes the iteration lattice points in the given set. This
   /// method should be called right before code generation to avoid
@@ -211,7 +218,8 @@ public:
                  Value v1);
 
 private:
-  bool maybeZero(unsigned e);
+  bool maybeZero(unsigned e) const;
+  bool isInvariant(unsigned e) const;
 
   /// Traverses the SSA tree (possibly a DAG) to build a tensor expression.
   Optional<unsigned> buildTensorExp(linalg::GenericOp op, Value v);

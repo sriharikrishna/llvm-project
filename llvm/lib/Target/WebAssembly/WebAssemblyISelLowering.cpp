@@ -212,6 +212,9 @@ WebAssemblyTargetLowering::WebAssemblyTargetLowering(
       for (auto T : {MVT::v16i8, MVT::v8i16, MVT::v4i32})
         setOperationAction(Op, T, Legal);
 
+    // And we have popcnt for i8x16
+    setOperationAction(ISD::CTPOP, MVT::v16i8, Legal);
+
     // Expand float operations supported for scalars but not SIMD
     for (auto Op : {ISD::FCOPYSIGN, ISD::FLOG, ISD::FLOG2, ISD::FLOG10,
                     ISD::FEXP, ISD::FEXP2, ISD::FRINT})
@@ -758,60 +761,6 @@ bool WebAssemblyTargetLowering::getTgtMemIntrinsic(IntrinsicInfo &Info,
     Info.align = Align(8);
     Info.flags = MachineMemOperand::MOVolatile | MachineMemOperand::MOLoad;
     return true;
-  case Intrinsic::wasm_load32_zero:
-  case Intrinsic::wasm_load64_zero:
-    Info.opc = ISD::INTRINSIC_W_CHAIN;
-    Info.memVT = Intrinsic == Intrinsic::wasm_load32_zero ? MVT::i32 : MVT::i64;
-    Info.ptrVal = I.getArgOperand(0);
-    Info.offset = 0;
-    Info.align = Align(1);
-    Info.flags = MachineMemOperand::MOLoad;
-    return true;
-  case Intrinsic::wasm_load8_lane:
-  case Intrinsic::wasm_load16_lane:
-  case Intrinsic::wasm_load32_lane:
-  case Intrinsic::wasm_load64_lane:
-  case Intrinsic::wasm_store8_lane:
-  case Intrinsic::wasm_store16_lane:
-  case Intrinsic::wasm_store32_lane:
-  case Intrinsic::wasm_store64_lane: {
-    MVT MemVT;
-    switch (Intrinsic) {
-    case Intrinsic::wasm_load8_lane:
-    case Intrinsic::wasm_store8_lane:
-      MemVT = MVT::i8;
-      break;
-    case Intrinsic::wasm_load16_lane:
-    case Intrinsic::wasm_store16_lane:
-      MemVT = MVT::i16;
-      break;
-    case Intrinsic::wasm_load32_lane:
-    case Intrinsic::wasm_store32_lane:
-      MemVT = MVT::i32;
-      break;
-    case Intrinsic::wasm_load64_lane:
-    case Intrinsic::wasm_store64_lane:
-      MemVT = MVT::i64;
-      break;
-    default:
-      llvm_unreachable("unexpected intrinsic");
-    }
-    if (Intrinsic == Intrinsic::wasm_load8_lane ||
-        Intrinsic == Intrinsic::wasm_load16_lane ||
-        Intrinsic == Intrinsic::wasm_load32_lane ||
-        Intrinsic == Intrinsic::wasm_load64_lane) {
-      Info.opc = ISD::INTRINSIC_W_CHAIN;
-      Info.flags = MachineMemOperand::MOLoad;
-    } else {
-      Info.opc = ISD::INTRINSIC_VOID;
-      Info.flags = MachineMemOperand::MOStore;
-    }
-    Info.ptrVal = I.getArgOperand(0);
-    Info.memVT = MemVT;
-    Info.offset = 0;
-    Info.align = Align(1);
-    return true;
-  }
   default:
     return false;
   }

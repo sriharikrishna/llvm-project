@@ -938,8 +938,8 @@ The selection kind must be one of the following:
     same data.
 ``largest``
     The linker will choose the section containing the largest COMDAT key.
-``noduplicates``
-    The linker requires that only section with this COMDAT key exist.
+``nodeduplicate``
+    No deduplication is performed.
 ``samesize``
     The linker may choose any COMDAT key but the sections must contain the
     same amount of data.
@@ -1182,6 +1182,24 @@ Currently, only the following parameter attributes are defined:
 
     The sret type argument specifies the in memory type, which must be
     the same as the pointee type of the argument.
+
+.. _attr_elementtype:
+
+``elementtype(<ty>)``
+
+    The ``elementtype`` argument attribute can be used to specify a pointer
+    element type in a way that is compatible with `opaque pointers
+    <OpaquePointers.html>`.
+
+    The ``elementtype`` attribute by itself does not carry any specific
+    semantics. However, certain intrinsics may require this attribute to be
+    present and assign it particular semantics. This will be documented on
+    individual intrinsics.
+
+    The attribute may only be applied to pointer typed arguments of intrinsic
+    calls. It cannot be applied to non-intrinsic calls, and cannot be applied
+    to parameters on function declarations. For non-opaque pointers, the type
+    passed to ``elementtype`` must match the pointer element type.
 
 .. _attr_align:
 
@@ -5017,8 +5035,8 @@ occurs on.
 Metadata
 ========
 
-LLVM IR allows metadata to be attached to instructions in the program
-that can convey extra information about the code to the optimizers and
+LLVM IR allows metadata to be attached to instructions and global objects in the
+program that can convey extra information about the code to the optimizers and
 code generator. One example application of metadata is source-level
 debug information. There are two metadata primitives: strings and nodes.
 
@@ -5078,6 +5096,9 @@ to the ``add`` instruction using the ``!dbg`` identifier:
 
     %indvar.next = add i64 %indvar, 1, !dbg !21
 
+Instructions may not have multiple metadata attachments with the same
+identifier.
+
 Metadata can also be attached to a function or a global variable. Here metadata
 ``!22`` is attached to the ``f1`` and ``f2`` functions, and the globals ``g1``
 and ``g2`` using the ``!dbg`` identifier:
@@ -5091,6 +5112,9 @@ and ``g2`` using the ``!dbg`` identifier:
 
     @g1 = global i32 0, !dbg !22
     @g2 = external global i32, !dbg !22
+
+Unlike instructions, global objects (functions and global variables) may have
+multiple metadata attachments with the same identifier.
 
 A transformation is required to drop any metadata attachment that it does not
 know or know it can't preserve. Currently there is an exception for metadata
@@ -22537,6 +22561,10 @@ The ``base`` is the array base address.  The ``dim`` is the array dimension.
 The ``base`` is a pointer if ``dim`` equals 0.
 The ``index`` is the last access index into the array or pointer.
 
+The ``base`` argument must be annotated with an :ref:`elementtype
+<attr_elementtype>` attribute at the call-site. This attribute specifies the
+getelementptr element type.
+
 Semantics:
 """"""""""
 
@@ -22601,6 +22629,10 @@ Arguments:
 
 The ``base`` is the structure base address. The ``gep_index`` is the struct member index
 based on IR structures. The ``di_index`` is the struct member index based on debuginfo.
+
+The ``base`` argument must be annotated with an :ref:`elementtype
+<attr_elementtype>` attribute at the call-site. This attribute specifies the
+getelementptr element type.
 
 Semantics:
 """"""""""

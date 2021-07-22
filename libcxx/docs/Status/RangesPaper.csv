@@ -77,7 +77,7 @@ Section,Description,Dependencies,Assignee,Complete
 [move.sentinel],,[predef.iterators],Unassigned,Not started
 [common.iterator],,"| [iterator.concepts]
 | [iterator.cust.swap]
-| [iterator.cust.move]",Zoe Carver,In Progress
+| [iterator.cust.move]",Zoe Carver,✅
 [default.sentinels],std::default_sentinel_t.,No dependencies,Zoe Carver,✅
 [counted.iterator],,"| [iterator.concepts]
 | [iterator.cust.swap]
@@ -119,8 +119,8 @@ Section,Description,Dependencies,Assignee,Complete
 | `ranges::bidirectional_range <https://llvm.org/D100278>`_
 | `ranges::random_access_range <https://llvm.org/D101316>`_
 | ranges::contiguous_range
-| `ranges::common_range <https://llvm.org/D100269>`_
-| ranges::viewable_range",[range.range],Christopher Di Bella,In progress
+| `ranges::common_range <https://llvm.org/D100269>`_",[range.range],Christopher Di Bella,✅
+`[range.refinements]`_,`ranges::viewable_range <https://reviews.llvm.org/D105816>`_,[range.range],Louis Dionne,✅
 `[range.utility.helpers] <http://wg21.link/range.utility.helpers>`_,"| *simple-view*
 | *has-arrow*
 | *not-same-as*","| [range.range]
@@ -133,7 +133,7 @@ Section,Description,Dependencies,Assignee,Complete
 `[range.dangling] <http://wg21.link/range.dangling>`_,"| ranges::dangling
 | ranges::borrowed_iterator_t
 | ranges::borrowed_subrange_t","| [range.range]
-| [range.subrange]",Unassigned,Not started
+| [range.subrange]",Christopher Di Bella,✅
 `[range.all] <http://wg21.link/range.all>`_,`view::all <https://llvm.org/D102028>`_,"[range.subrange], [range.view.ref]",Zoe Carver,✅
 `[range.view.ref] <http://wg21.link/range.view>`_,`ref-view <https://llvm.org/D102020>`_,[view.interface],Zoe Carver,✅
 `[range.filter] <http://wg21.link/range.filter>`_,filter_view,[range.all],Louis Dionne,Not started
