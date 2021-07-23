@@ -18,7 +18,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <SourceInfo.h>
+#include "SourceInfo.h"
 
 #define OFFLOAD_SUCCESS (0)
 #define OFFLOAD_FAIL (~0)
@@ -174,6 +174,11 @@ struct __tgt_target_non_contig {
   uint64_t Offset;
   uint64_t Count;
   uint64_t Stride;
+};
+
+struct __tgt_device_info {
+  void *Context = nullptr;
+  void *Device = nullptr;
 };
 
 #ifdef __cplusplus

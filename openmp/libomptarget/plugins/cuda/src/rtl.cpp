@@ -70,9 +70,10 @@ struct FuncOrGblEntryTy {
 };
 
 enum ExecutionModeType {
-  SPMD, // constructors, destructors,
-  // combined constructs (`teams distribute parallel for [simd]`)
-  GENERIC, // everything else
+  SPMD,         // constructors, destructors,
+                // combined constructs (`teams distribute parallel for [simd]`)
+  GENERIC,      // everything else
+  SPMD_GENERIC, // Generic kernel with SPMD execution
   NONE
 };
 
@@ -83,6 +84,7 @@ struct KernelTy {
   // execution mode of kernel
   // 0 - SPMD mode (without master warp)
   // 1 - Generic mode (with master warp)
+  // 2 - SPMD mode execution with Generic mode semantics.
   int8_t ExecutionMode;
 
   /// Maximal number of threads per block for this kernel.
@@ -421,6 +423,7 @@ class DeviceRTLTy {
     E.Table.EntriesBegin = E.Table.EntriesEnd = nullptr;
   }
 
+public:
   CUstream getStream(const int DeviceId, __tgt_async_info *AsyncInfo) const {
     assert(AsyncInfo && "AsyncInfo is nullptr");
 
@@ -430,7 +433,6 @@ class DeviceRTLTy {
     return reinterpret_cast<CUstream>(AsyncInfo->Queue);
   }
 
-public:
   // This class should not be copied
   DeviceRTLTy(const DeviceRTLTy &) = delete;
   DeviceRTLTy(DeviceRTLTy &&) = delete;
@@ -796,7 +798,7 @@ public:
           return nullptr;
         }
 
-        if (ExecModeVal < 0 || ExecModeVal > 1) {
+        if (ExecModeVal < 0 || ExecModeVal > 2) {
           DP("Error wrong exec_mode value specified in cubin file: %d\n",
              ExecModeVal);
           return nullptr;
@@ -1045,7 +1047,7 @@ public:
           // will execute one iteration of the loop. round up to the nearest
           // integer
           CudaBlocksPerGrid = ((LoopTripCount - 1) / CudaThreadsPerBlock) + 1;
-        } else {
+        } else if (KernelInfo->ExecutionMode == GENERIC) {
           // If we reach this point, then we have a non-combined construct, i.e.
           // `teams distribute` with a nested `parallel for` and each team is
           // assigned one iteration of the `distribute` loop. E.g.:
@@ -1059,6 +1061,17 @@ public:
           // Threads within a team will execute the iterations of the `parallel`
           // loop.
           CudaBlocksPerGrid = LoopTripCount;
+        } else if (KernelInfo->ExecutionMode == SPMD_GENERIC) {
+          // If we reach this point, then we are executing a kernel that was
+          // transformed from Generic-mode to SPMD-mode. This kernel has
+          // SPMD-mode execution, but needs its blocks to be scheduled
+          // differently because the current loop trip count only applies to the
+          // `teams distribute` region and will create var too few blocks using
+          // the regular SPMD-mode method.
+          CudaBlocksPerGrid = LoopTripCount;
+        } else {
+          REPORT("Unknown execution mode: %d\n", KernelInfo->ExecutionMode);
+          return OFFLOAD_FAIL;
         }
         DP("Using %d teams due to loop trip count %" PRIu32
            " and number of threads per block %d\n",
@@ -1083,7 +1096,9 @@ public:
              ? getOffloadEntry(DeviceId, TgtEntryPtr)->name
              : "(null)",
          CudaBlocksPerGrid, CudaThreadsPerBlock,
-         (KernelInfo->ExecutionMode == SPMD) ? "SPMD" : "Generic");
+         (KernelInfo->ExecutionMode != SPMD 
+             ? (KernelInfo->ExecutionMode == GENERIC ? "Generic" : "SPMD-Generic")
+             : "SPMD"));
 
     CUstream Stream = getStream(DeviceId, AsyncInfo);
     Err = cuLaunchKernel(KernelInfo->Func, CudaBlocksPerGrid, /* gridDimY */ 1,
@@ -1117,6 +1132,46 @@ public:
       CUDA_ERR_STRING(Err);
     }
     return (Err == CUDA_SUCCESS) ? OFFLOAD_SUCCESS : OFFLOAD_FAIL;
+  }
+
+  int releaseAsyncInfo(int DeviceId, __tgt_async_info *AsyncInfo) const {
+    if (AsyncInfo->Queue) {
+      StreamManager->returnStream(
+          DeviceId, reinterpret_cast<CUstream>(AsyncInfo->Queue));
+      AsyncInfo->Queue = nullptr;
+    }
+
+    return OFFLOAD_SUCCESS;
+  }
+
+  int initAsyncInfo(int DeviceId, __tgt_async_info **AsyncInfo) const {
+    CUresult Err = cuCtxSetCurrent(DeviceData[DeviceId].Context);
+    if (!checkResult(Err, "error returned from cuCtxSetCurrent"))
+      return OFFLOAD_FAIL;
+
+    __tgt_async_info *P = new __tgt_async_info;
+    *AsyncInfo = P;
+    getStream(DeviceId, *AsyncInfo);
+    return OFFLOAD_SUCCESS;
+  }
+
+  int initDeviceInfo(const int DeviceId, __tgt_device_info *DeviceInfo,
+                     const char **errStr) const {
+    assert(DeviceInfo && "DeviceInfo is nullptr");
+
+    if (!DeviceInfo->Context)
+      DeviceInfo->Context = DeviceData[DeviceId].Context;
+    if (!DeviceInfo->Device) {
+      CUdevice Dev;
+      CUresult Err = cuDeviceGet(&Dev, DeviceId);
+      if (Err == CUDA_SUCCESS) {
+        DeviceInfo->Device = reinterpret_cast<void *>(Dev);
+      } else {
+        cuGetErrorString(Err, errStr);
+        return OFFLOAD_FAIL;
+      }
+    }
+    return OFFLOAD_SUCCESS;
   }
 };
 
@@ -1313,9 +1368,33 @@ int32_t __tgt_rtl_synchronize(int32_t device_id,
   return DeviceRTL.synchronize(device_id, async_info_ptr);
 }
 
+int32_t __tgt_rtl_release_async_info(int32_t device_id,
+                                     __tgt_async_info *async_info) {
+  assert(DeviceRTL.isValidDeviceId(device_id) && "device_id is invalid");
+  assert(async_info && "async_info is nullptr");
+
+  return DeviceRTL.releaseAsyncInfo(device_id, async_info);
+}
+
+int32_t __tgt_rtl_init_async_info(int32_t device_id, __tgt_async_info **async_info) {
+  assert(DeviceRTL.isValidDeviceId(device_id) && "device_id is invalid");
+  assert(async_info && "async_info is nullptr");
+
+  return DeviceRTL.initAsyncInfo(device_id, async_info);
+}
+
 void __tgt_rtl_set_info_flag(uint32_t NewInfoLevel) {
   std::atomic<uint32_t> &InfoLevel = getInfoLevelInternal();
   InfoLevel.store(NewInfoLevel);
+}
+
+int32_t __tgt_rtl_init_device_info(int32_t device_id,
+                                   __tgt_device_info *device_info_ptr,
+                                   const char **errStr) {
+  assert(DeviceRTL.isValidDeviceId(device_id) && "device_id is invalid");
+  assert(device_info_ptr && "device_info_ptr is nullptr");
+
+  return DeviceRTL.initDeviceInfo(device_id, device_info_ptr, errStr);
 }
 
 #ifdef __cplusplus

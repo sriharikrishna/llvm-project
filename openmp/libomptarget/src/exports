@@ -1,4 +1,4 @@
-VERS1.0 {
+VERSION {
   global:
     __tgt_register_requires;
     __tgt_register_lib;
@@ -40,6 +40,15 @@ VERS1.0 {
     llvm_omp_target_alloc_shared;
     llvm_omp_target_alloc_device;
     __tgt_set_info_flag;
+    omp_get_interop_ptr;
+    omp_get_interop_str;
+    omp_get_interop_int;
+    omp_get_interop_name;
+    omp_get_interop_type_desc;
+    omp_get_interop_rc_desc;
+    __kmpc_interop_init;
+    __kmpc_interop_use;
+    __kmpc_interop_destroy;
   local:
     *;
 };
