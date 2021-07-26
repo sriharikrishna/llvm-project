@@ -9,8 +9,9 @@
 #include "interop.h"
 #include "private.h"
 
+namespace {
 static omp_interop_rc_t
-__kmpc_interop_get_property_err_type(omp_interop_property_t property) {
+__tgt_interop_get_property_err_type(omp_interop_property_t property) {
   switch (property) {
   case omp_ipr_fr_id:
     return omp_irc_type_int;
@@ -34,27 +35,40 @@ __kmpc_interop_get_property_err_type(omp_interop_property_t property) {
   return omp_irc_no_value;
 }
 
-static void __kmpc_interop_type_mismatch(omp_interop_property_t property,
+static void __tgt_interop_type_mismatch(omp_interop_property_t property,
                                          int *err) {
   if (err)
-    *err = __kmpc_interop_get_property_err_type(property);
+    *err = __tgt_interop_get_property_err_type(property);
 }
 
-///TODO Use vendor_id to look up the string
-static const char *__kmpc_interop_vendor_id_to_str(intptr_t vendor_id) {
-  return "CUDA_driver";
+static const char *__tgt_interop_vendor_id_to_str(intptr_t vendor_id) {
+  switch(vendor_id){
+    case 1:
+      return ("cuda");
+    case 2: 
+      return ("cuda_driver");
+    case 3: 
+      return ("opencl");
+    case 4: 
+      return ("sycl");
+    case 5: 
+      return ("hip");
+    case 6: 
+      return ("level_zero");
+    default: 
+      return("unknown");
+  }
 }
 
 template <typename PropertyTy>
-static PropertyTy __kmpc_interop_get_property(omp_interop_val_t &interop_val,
+static PropertyTy __tgt_interop_get_property(omp_interop_val_t &interop_val,
                                               omp_interop_property_t property,
                                               int *err);
 
 template <>
-intptr_t __kmpc_interop_get_property<intptr_t>(omp_interop_val_t &interop_val,
+intptr_t __tgt_interop_get_property<intptr_t>(omp_interop_val_t &interop_val,
                                                omp_interop_property_t property,
                                                int *err) {
-	      
   switch (property) {
   case omp_ipr_fr_id:
     return interop_val.backend_type_id;
@@ -65,27 +79,27 @@ intptr_t __kmpc_interop_get_property<intptr_t>(omp_interop_val_t &interop_val,
   default:
     ;
   }
-  __kmpc_interop_type_mismatch(property, err);
+  __tgt_interop_type_mismatch(property, err);
   return 0;
 }
 
 template <>
-const char *__kmpc_interop_get_property<const char *>(
+const char *__tgt_interop_get_property<const char *>(
     omp_interop_val_t &interop_val, omp_interop_property_t property, int *err) {
   switch (property) {
   case omp_ipr_fr_id:
     return interop_val.interop_type == kmp_interop_type_tasksync ? "tasksync"
                                                                  : "device+context";
   case omp_ipr_vendor_name:
-    return __kmpc_interop_vendor_id_to_str(interop_val.vendor_id);
+    return __tgt_interop_vendor_id_to_str(interop_val.vendor_id);
   default:
-    __kmpc_interop_type_mismatch(property, err);
+    __tgt_interop_type_mismatch(property, err);
     return nullptr;
   }
 }
 
 template <>
-void *__kmpc_interop_get_property<void *>(omp_interop_val_t &interop_val,
+void *__tgt_interop_get_property<void *>(omp_interop_val_t &interop_val,
                                           omp_interop_property_t property,
                                           int *err) {
   switch (property) {
@@ -101,11 +115,11 @@ void *__kmpc_interop_get_property<void *>(omp_interop_val_t &interop_val,
   default:
     ;
   }
-  __kmpc_interop_type_mismatch(property, err);
+  __tgt_interop_type_mismatch(property, err);
   return nullptr;
 }
 
-static bool __kmpc_interop_get_property_check(omp_interop_val_t **interop_ptr,
+static bool __tgt_interop_get_property_check(omp_interop_val_t **interop_ptr,
                                               omp_interop_property_t property,
                                               int *err) {
   if (err)
@@ -135,6 +149,7 @@ static bool __kmpc_interop_get_property_check(omp_interop_val_t **interop_ptr,
   return true;
 }
 
+} //namespace {
 
 #define __OMP_GET_INTEROP_TY(RETURN_TYPE, SUFFIX)                              \
 RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
@@ -142,10 +157,10 @@ RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
                                  int *err) {                                   \
     omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
     assert((interop_val)->interop_type == kmp_interop_type_tasksync);\
-    if (!__kmpc_interop_get_property_check(&interop_val, property_id, err)){    \
+    if (!__tgt_interop_get_property_check(&interop_val, property_id, err)){    \
       return (RETURN_TYPE)(0);                                                 \
     }\
-    return __kmpc_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
+    return __tgt_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
                                                     err);                      \
 }
 __OMP_GET_INTEROP_TY(intptr_t, int)
@@ -159,11 +174,11 @@ RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
                                  omp_interop_property_t property_id) {         \
     int err;                                                                  \
     omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
-    if (!__kmpc_interop_get_property_check(&interop_val, property_id, &err)){    \
+    if (!__tgt_interop_get_property_check(&interop_val, property_id, &err)){    \
       return (RETURN_TYPE)(0); \
     }\
     return nullptr;\
-    return __kmpc_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
+    return __tgt_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
                                                     &err);                      \
 }
 __OMP_GET_INTEROP_TY3(const char*, name)
@@ -187,24 +202,19 @@ void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
   if (device_id == -1){
     device_id = omp_get_default_device();
   }
-  interop_ptr = new omp_interop_val_t(device_id, interop_type);
-
-  if (device_id == omp_get_initial_device()) {
-    assert(device_id != omp_get_initial_device());
-    return;
+  
+  if (interop_type == kmp_interop_type_tasksync) {
+    __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
+                         noalias_dep_list);
   }
 
+  interop_ptr = new omp_interop_val_t(device_id, interop_type);
   if (!device_is_ready(device_id)) {
     interop_ptr->err_str = "Device not ready!";
     return;
   }
 
   DeviceTy &Device = PM->Devices[device_id];
-  if (interop_type == kmp_interop_type_tasksync) {
-    __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
-                         noalias_dep_list);
-  }
-
   if (interop_type == kmp_interop_type_tasksync) {
     if (!Device.RTL || !Device.RTL->init_async_info ||
         Device.RTL->init_async_info(device_id, &(interop_ptr)->async_info)) {
@@ -216,6 +226,7 @@ void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
         Device.RTL->init_device_info(device_id, &(interop_ptr)->device_info,
                                      &(interop_ptr)->err_str)) {
       delete interop_ptr;
+      interop_ptr = omp_interop_none;
     }
   }
 }
