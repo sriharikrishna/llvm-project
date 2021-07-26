@@ -1,3 +1,11 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef _INTEROP_H_
 #define _INTEROP_H_
 
@@ -15,6 +23,10 @@
 #           define __KMP_IMP
 #       endif
 #   endif	
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /// TODO: Include the `omp.h` of the current build
     /* OpenMP 5.1 interop */
@@ -59,11 +71,8 @@
 
     typedef void * omp_interop_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-    	/*!
+    /*!
      * The `omp_get_num_interop_properties` routine retrieves the number of implementation-defined properties available for an `omp_interop_t` object.
      */
     int          __KAI_KMPC_CONVENTION  omp_get_num_interop_properties(const omp_interop_t);
@@ -91,9 +100,7 @@ extern "C" {
      * The `omp_get_interop_rc_desc` routine retrieves a description of the return code associated with an `omp_interop_t` object.
      */
     extern const char * __KAI_KMPC_CONVENTION  omp_get_interop_rc_desc(const omp_interop_t, omp_interop_rc_t);
-#ifdef __cplusplus
-}
-#endif
+
     typedef struct kmp_tasking_flags { /* Total struct must be exactly 32 bits */
   /* Compiler flags */ /* Total compiler flags must be 16 bits */
   unsigned tiedness : 1; /* task is either tied (1) or untied (0) */
@@ -131,17 +138,11 @@ typedef enum kmp_interop_type_t {
   kmp_interop_type_tasksync,
 } kmp_interop_type_t;
 
-extern "C" {
-
 /// The interop value type, aka. the interop object.
 typedef struct omp_interop_val_t {
   /// Device and interop-type are determined at construction time and fix.
   omp_interop_val_t(intptr_t device_id, kmp_interop_type_t interop_type)
       : interop_type(interop_type), device_id(device_id) {
-    assert(interop_type != kmp_interop_type_unknown);
-    assert(!async_info);
-    assert(!device_info.Device);
-    assert(!device_info.Context);
   }
   const char *err_str = nullptr;
   __tgt_async_info *async_info = nullptr;
@@ -152,5 +153,7 @@ typedef struct omp_interop_val_t {
   const intptr_t backend_type_id = omp_interop_backend_type_cuda_1;
 } omp_interop_val_t;
 
+#ifdef __cplusplus
 }
+#endif
 #endif
