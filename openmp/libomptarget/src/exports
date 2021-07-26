@@ -1,4 +1,4 @@
-VERSION {
+VERS1.0 {
   global:
     __tgt_register_requires;
     __tgt_register_lib;
