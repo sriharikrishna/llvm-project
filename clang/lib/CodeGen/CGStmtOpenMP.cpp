@@ -6330,10 +6330,12 @@ void CodeGenFunction::EmitOMPInteropDirective(const OMPInteropDirective &S) {
     llvm::Value *InteropvarPtr =
         EmitLValue(C->getInteropVar()).getPointer(*this);
     llvm::omp::OMPInteropType InteropType = llvm::omp::OMPInteropType::Unknown;
-    if (C->getIsTarget())
+    if (C->getIsTarget()) {
       InteropType = llvm::omp::OMPInteropType::Target;
-    else if (C->getIsTargetSync())
+    } else {
+      assert(C->getIsTargetSync() && "Expected interop-type target/targetsync");
       InteropType = llvm::omp::OMPInteropType::TargetSync;
+    }
     OMPBuilder.createOMPInteropInit(Builder, InteropvarPtr, InteropType, Device,
                                     NumDependences, DependenceAddress,
                                     S.hasClausesOfKind<OMPNowaitClause>());

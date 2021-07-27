@@ -2201,7 +2201,7 @@ CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc,
       Ident,  ThreadId,       InteropVar,        InteropTypeVal,
       Device, NumDependences, DependenceAddress, HaveNowaitClauseVal};
 
-  Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_interop_init);
+  Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___tgt_interop_init);
 
   return Builder.CreateCall(Fn, Args);
 }
@@ -2229,7 +2229,7 @@ CallInst *OpenMPIRBuilder::createOMPInteropDestroy(
       Ident,          ThreadId,          InteropVar,         Device,
       NumDependences, DependenceAddress, HaveNowaitClauseVal};
 
-  Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_interop_destroy);
+  Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___tgt_interop_destroy);
 
   return Builder.CreateCall(Fn, Args);
 }
@@ -2258,7 +2258,7 @@ CallInst *OpenMPIRBuilder::createOMPInteropUse(const LocationDescription &Loc,
       Ident,          ThreadId,          InteropVar,         Device,
       NumDependences, DependenceAddress, HaveNowaitClauseVal};
 
-  Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_interop_use);
+  Function *Fn = getOrCreateRuntimeFunctionPtr(OMPRTL___tgt_interop_use);
 
   return Builder.CreateCall(Fn, Args);
 }
