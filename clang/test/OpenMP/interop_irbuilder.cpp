@@ -23,135 +23,6 @@ void test1() {
   #pragma omp interop destroy(interop) depend(in:D0, D1)
 }
 
-// ###: %clang_cc1 -verify -fopenmp -emit-llvm  -o -| FileCheck  %s
-// CHECK-64-LABEL: @_Z5test1v(
-// CHECK-64-NEXT:  entry:
-// CHECK-64-NEXT:    [[DEVICE_ID:%.*]] = alloca i32, align 4
-// CHECK-64-NEXT:    [[D0:%.*]] = alloca i32, align 4
-// CHECK-64-NEXT:    [[D1:%.*]] = alloca i32, align 4
-// CHECK-64-NEXT:    [[INTEROP:%.*]] = alloca i8*, align 8
-// CHECK-64-NEXT:    [[DOTDEP_ARR_ADDR:%.*]] = alloca [2 x %struct.kmp_depend_info], align 8
-// CHECK-64-NEXT:    [[DEP_COUNTER_ADDR:%.*]] = alloca i64, align 8
-// CHECK-64-NEXT:    [[DOTDEP_ARR_ADDR5:%.*]] = alloca [2 x %struct.kmp_depend_info], align 8
-// CHECK-64-NEXT:    [[DEP_COUNTER_ADDR6:%.*]] = alloca i64, align 8
-// CHECK-64-NEXT:    store i32 4, i32* [[DEVICE_ID]], align 4
-// CHECK-64-NEXT:    [[OMP_GLOBAL_THREAD_NUM:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1:[0-9]+]])
-// CHECK-64-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM]], i8** [[INTEROP]], i64 1, i32 -1, i32 0, i8* null, i32 0)
-// CHECK-64-NEXT:    [[OMP_GLOBAL_THREAD_NUM1:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-64-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM1]], i8** [[INTEROP]], i64 2, i32 -1, i32 0, i8* null, i32 0)
-// CHECK-64-NEXT:    [[TMP0:%.*]] = load i32, i32* [[DEVICE_ID]], align 4
-// CHECK-64-NEXT:    [[OMP_GLOBAL_THREAD_NUM2:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-64-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM2]], i8** [[INTEROP]], i64 1, i32 [[TMP0]], i32 0, i8* null, i32 0)
-// CHECK-64-NEXT:    [[TMP1:%.*]] = load i32, i32* [[DEVICE_ID]], align 4
-// CHECK-64-NEXT:    [[OMP_GLOBAL_THREAD_NUM3:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-64-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM3]], i8** [[INTEROP]], i64 2, i32 [[TMP1]], i32 0, i8* null, i32 0)
-// CHECK-64-NEXT:    [[TMP2:%.*]] = getelementptr inbounds [2 x %struct.kmp_depend_info], [2 x %struct.kmp_depend_info]* [[DOTDEP_ARR_ADDR]], i64 0, i64 0
-// CHECK-64-NEXT:    [[TMP3:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO:%.*]], %struct.kmp_depend_info* [[TMP2]], i64 0
-// CHECK-64-NEXT:    [[TMP4:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP3]], i32 0, i32 0
-// CHECK-64-NEXT:    [[TMP5:%.*]] = ptrtoint i32* [[D0]] to i64
-// CHECK-64-NEXT:    store i64 [[TMP5]], i64* [[TMP4]], align 8
-// CHECK-64-NEXT:    [[TMP6:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP3]], i32 0, i32 1
-// CHECK-64-NEXT:    store i64 4, i64* [[TMP6]], align 8
-// CHECK-64-NEXT:    [[TMP7:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP3]], i32 0, i32 2
-// CHECK-64-NEXT:    store i8 1, i8* [[TMP7]], align 8
-// CHECK-64-NEXT:    [[TMP8:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP2]], i64 1
-// CHECK-64-NEXT:    [[TMP9:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP8]], i32 0, i32 0
-// CHECK-64-NEXT:    [[TMP10:%.*]] = ptrtoint i32* [[D1]] to i64
-// CHECK-64-NEXT:    store i64 [[TMP10]], i64* [[TMP9]], align 8
-// CHECK-64-NEXT:    [[TMP11:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP8]], i32 0, i32 1
-// CHECK-64-NEXT:    store i64 4, i64* [[TMP11]], align 8
-// CHECK-64-NEXT:    [[TMP12:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP8]], i32 0, i32 2
-// CHECK-64-NEXT:    store i8 1, i8* [[TMP12]], align 8
-// CHECK-64-NEXT:    store i64 2, i64* [[DEP_COUNTER_ADDR]], align 8
-// CHECK-64-NEXT:    [[TMP13:%.*]] = bitcast %struct.kmp_depend_info* [[TMP2]] to i8*
-// CHECK-64-NEXT:    [[OMP_GLOBAL_THREAD_NUM4:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-64-NEXT:    call void @__kmpc_interop_use(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM4]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP13]], i32 1)
-// CHECK-64-NEXT:    [[TMP14:%.*]] = getelementptr inbounds [2 x %struct.kmp_depend_info], [2 x %struct.kmp_depend_info]* [[DOTDEP_ARR_ADDR5]], i64 0, i64 0
-// CHECK-64-NEXT:    [[TMP15:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP14]], i64 0
-// CHECK-64-NEXT:    [[TMP16:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP15]], i32 0, i32 0
-// CHECK-64-NEXT:    [[TMP17:%.*]] = ptrtoint i32* [[D0]] to i64
-// CHECK-64-NEXT:    store i64 [[TMP17]], i64* [[TMP16]], align 8
-// CHECK-64-NEXT:    [[TMP18:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP15]], i32 0, i32 1
-// CHECK-64-NEXT:    store i64 4, i64* [[TMP18]], align 8
-// CHECK-64-NEXT:    [[TMP19:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP15]], i32 0, i32 2
-// CHECK-64-NEXT:    store i8 1, i8* [[TMP19]], align 8
-// CHECK-64-NEXT:    [[TMP20:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP14]], i64 1
-// CHECK-64-NEXT:    [[TMP21:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP20]], i32 0, i32 0
-// CHECK-64-NEXT:    [[TMP22:%.*]] = ptrtoint i32* [[D1]] to i64
-// CHECK-64-NEXT:    store i64 [[TMP22]], i64* [[TMP21]], align 8
-// CHECK-64-NEXT:    [[TMP23:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP20]], i32 0, i32 1
-// CHECK-64-NEXT:    store i64 4, i64* [[TMP23]], align 8
-// CHECK-64-NEXT:    [[TMP24:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP20]], i32 0, i32 2
-// CHECK-64-NEXT:    store i8 1, i8* [[TMP24]], align 8
-// CHECK-64-NEXT:    store i64 2, i64* [[DEP_COUNTER_ADDR6]], align 8
-// CHECK-64-NEXT:    [[TMP25:%.*]] = bitcast %struct.kmp_depend_info* [[TMP14]] to i8*
-// CHECK-64-NEXT:    [[OMP_GLOBAL_THREAD_NUM7:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-64-NEXT:    call void @__kmpc_interop_destroy(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM7]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP25]], i32 0)
-// CHECK-64-NEXT:    ret void
-// OMP45-LABEL: @_Z5test1v(
-// OMP45-NEXT:  entry:
-// OMP45-NEXT:    [[DEVICE_ID:%.*]] = alloca i32, align 4
-// OMP45-NEXT:    [[D0:%.*]] = alloca i32, align 4
-// OMP45-NEXT:    [[D1:%.*]] = alloca i32, align 4
-// OMP45-NEXT:    [[INTEROP:%.*]] = alloca i8*, align 8
-// OMP45-NEXT:    [[DOTDEP_ARR_ADDR:%.*]] = alloca [2 x %struct.kmp_depend_info], align 8
-// OMP45-NEXT:    [[DEP_COUNTER_ADDR:%.*]] = alloca i64, align 8
-// OMP45-NEXT:    [[DOTDEP_ARR_ADDR5:%.*]] = alloca [2 x %struct.kmp_depend_info], align 8
-// OMP45-NEXT:    [[DEP_COUNTER_ADDR6:%.*]] = alloca i64, align 8
-// OMP45-NEXT:    store i32 4, i32* [[DEVICE_ID]], align 4
-// OMP45-NEXT:    [[OMP_GLOBAL_THREAD_NUM:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1:[0-9]+]])
-// OMP45-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM]], i8** [[INTEROP]], i64 1, i32 -1, i32 0, i8* null, i32 0)
-// OMP45-NEXT:    [[OMP_GLOBAL_THREAD_NUM1:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// OMP45-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM1]], i8** [[INTEROP]], i64 2, i32 -1, i32 0, i8* null, i32 0)
-// OMP45-NEXT:    [[TMP0:%.*]] = load i32, i32* [[DEVICE_ID]], align 4
-// OMP45-NEXT:    [[OMP_GLOBAL_THREAD_NUM2:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// OMP45-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM2]], i8** [[INTEROP]], i64 1, i32 [[TMP0]], i32 0, i8* null, i32 0)
-// OMP45-NEXT:    [[TMP1:%.*]] = load i32, i32* [[DEVICE_ID]], align 4
-// OMP45-NEXT:    [[OMP_GLOBAL_THREAD_NUM3:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// OMP45-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM3]], i8** [[INTEROP]], i64 2, i32 [[TMP1]], i32 0, i8* null, i32 0)
-// OMP45-NEXT:    [[TMP2:%.*]] = getelementptr inbounds [2 x %struct.kmp_depend_info], [2 x %struct.kmp_depend_info]* [[DOTDEP_ARR_ADDR]], i64 0, i64 0
-// OMP45-NEXT:    [[TMP3:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO:%.*]], %struct.kmp_depend_info* [[TMP2]], i64 0
-// OMP45-NEXT:    [[TMP4:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP3]], i32 0, i32 0
-// OMP45-NEXT:    [[TMP5:%.*]] = ptrtoint i32* [[D0]] to i64
-// OMP45-NEXT:    store i64 [[TMP5]], i64* [[TMP4]], align 8
-// OMP45-NEXT:    [[TMP6:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP3]], i32 0, i32 1
-// OMP45-NEXT:    store i64 4, i64* [[TMP6]], align 8
-// OMP45-NEXT:    [[TMP7:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP3]], i32 0, i32 2
-// OMP45-NEXT:    store i8 1, i8* [[TMP7]], align 8
-// OMP45-NEXT:    [[TMP8:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP2]], i64 1
-// OMP45-NEXT:    [[TMP9:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP8]], i32 0, i32 0
-// OMP45-NEXT:    [[TMP10:%.*]] = ptrtoint i32* [[D1]] to i64
-// OMP45-NEXT:    store i64 [[TMP10]], i64* [[TMP9]], align 8
-// OMP45-NEXT:    [[TMP11:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP8]], i32 0, i32 1
-// OMP45-NEXT:    store i64 4, i64* [[TMP11]], align 8
-// OMP45-NEXT:    [[TMP12:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP8]], i32 0, i32 2
-// OMP45-NEXT:    store i8 1, i8* [[TMP12]], align 8
-// OMP45-NEXT:    store i64 2, i64* [[DEP_COUNTER_ADDR]], align 8
-// OMP45-NEXT:    [[TMP13:%.*]] = bitcast %struct.kmp_depend_info* [[TMP2]] to i8*
-// OMP45-NEXT:    [[OMP_GLOBAL_THREAD_NUM4:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// OMP45-NEXT:    call void @__kmpc_interop_use(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM4]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP13]], i32 1)
-// OMP45-NEXT:    [[TMP14:%.*]] = getelementptr inbounds [2 x %struct.kmp_depend_info], [2 x %struct.kmp_depend_info]* [[DOTDEP_ARR_ADDR5]], i64 0, i64 0
-// OMP45-NEXT:    [[TMP15:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP14]], i64 0
-// OMP45-NEXT:    [[TMP16:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP15]], i32 0, i32 0
-// OMP45-NEXT:    [[TMP17:%.*]] = ptrtoint i32* [[D0]] to i64
-// OMP45-NEXT:    store i64 [[TMP17]], i64* [[TMP16]], align 8
-// OMP45-NEXT:    [[TMP18:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP15]], i32 0, i32 1
-// OMP45-NEXT:    store i64 4, i64* [[TMP18]], align 8
-// OMP45-NEXT:    [[TMP19:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP15]], i32 0, i32 2
-// OMP45-NEXT:    store i8 1, i8* [[TMP19]], align 8
-// OMP45-NEXT:    [[TMP20:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP14]], i64 1
-// OMP45-NEXT:    [[TMP21:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP20]], i32 0, i32 0
-// OMP45-NEXT:    [[TMP22:%.*]] = ptrtoint i32* [[D1]] to i64
-// OMP45-NEXT:    store i64 [[TMP22]], i64* [[TMP21]], align 8
-// OMP45-NEXT:    [[TMP23:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP20]], i32 0, i32 1
-// OMP45-NEXT:    store i64 4, i64* [[TMP23]], align 8
-// OMP45-NEXT:    [[TMP24:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP20]], i32 0, i32 2
-// OMP45-NEXT:    store i8 1, i8* [[TMP24]], align 8
-// OMP45-NEXT:    store i64 2, i64* [[DEP_COUNTER_ADDR6]], align 8
-// OMP45-NEXT:    [[TMP25:%.*]] = bitcast %struct.kmp_depend_info* [[TMP14]] to i8*
-// OMP45-NEXT:    [[OMP_GLOBAL_THREAD_NUM7:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// OMP45-NEXT:    call void @__kmpc_interop_destroy(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM7]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP25]], i32 0)
-// OMP45-NEXT:    ret void
 // CHECK-LABEL: @_Z5test1v(
 // CHECK-NEXT:  entry:
 // CHECK-NEXT:    [[DEVICE_ID:%.*]] = alloca i32, align 4
@@ -164,15 +35,15 @@ void test1() {
 // CHECK-NEXT:    [[DEP_COUNTER_ADDR6:%.*]] = alloca i64, align 8
 // CHECK-NEXT:    store i32 4, i32* [[DEVICE_ID]], align 4
 // CHECK-NEXT:    [[OMP_GLOBAL_THREAD_NUM:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1:[0-9]+]])
-// CHECK-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM]], i8** [[INTEROP]], i64 1, i32 -1, i32 0, i8* null, i32 0)
+// CHECK-NEXT:    call void @__tgt_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM]], i8** [[INTEROP]], i64 1, i32 -1, i32 0, i8* null, i32 0)
 // CHECK-NEXT:    [[OMP_GLOBAL_THREAD_NUM1:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM1]], i8** [[INTEROP]], i64 2, i32 -1, i32 0, i8* null, i32 0)
+// CHECK-NEXT:    call void @__tgt_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM1]], i8** [[INTEROP]], i64 2, i32 -1, i32 0, i8* null, i32 0)
 // CHECK-NEXT:    [[TMP0:%.*]] = load i32, i32* [[DEVICE_ID]], align 4
 // CHECK-NEXT:    [[OMP_GLOBAL_THREAD_NUM2:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM2]], i8** [[INTEROP]], i64 1, i32 [[TMP0]], i32 0, i8* null, i32 0)
+// CHECK-NEXT:    call void @__tgt_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM2]], i8** [[INTEROP]], i64 1, i32 [[TMP0]], i32 0, i8* null, i32 0)
 // CHECK-NEXT:    [[TMP1:%.*]] = load i32, i32* [[DEVICE_ID]], align 4
 // CHECK-NEXT:    [[OMP_GLOBAL_THREAD_NUM3:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-NEXT:    call void @__kmpc_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM3]], i8** [[INTEROP]], i64 2, i32 [[TMP1]], i32 0, i8* null, i32 0)
+// CHECK-NEXT:    call void @__tgt_interop_init(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM3]], i8** [[INTEROP]], i64 2, i32 [[TMP1]], i32 0, i8* null, i32 0)
 // CHECK-NEXT:    [[TMP2:%.*]] = getelementptr inbounds [2 x %struct.kmp_depend_info], [2 x %struct.kmp_depend_info]* [[DOTDEP_ARR_ADDR]], i64 0, i64 0
 // CHECK-NEXT:    [[TMP3:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO:%.*]], %struct.kmp_depend_info* [[TMP2]], i64 0
 // CHECK-NEXT:    [[TMP4:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP3]], i32 0, i32 0
@@ -193,7 +64,7 @@ void test1() {
 // CHECK-NEXT:    store i64 2, i64* [[DEP_COUNTER_ADDR]], align 8
 // CHECK-NEXT:    [[TMP13:%.*]] = bitcast %struct.kmp_depend_info* [[TMP2]] to i8*
 // CHECK-NEXT:    [[OMP_GLOBAL_THREAD_NUM4:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-NEXT:    call void @__kmpc_interop_use(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM4]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP13]], i32 1)
+// CHECK-NEXT:    call void @__tgt_interop_use(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM4]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP13]], i32 1)
 // CHECK-NEXT:    [[TMP14:%.*]] = getelementptr inbounds [2 x %struct.kmp_depend_info], [2 x %struct.kmp_depend_info]* [[DOTDEP_ARR_ADDR5]], i64 0, i64 0
 // CHECK-NEXT:    [[TMP15:%.*]] = getelementptr [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP14]], i64 0
 // CHECK-NEXT:    [[TMP16:%.*]] = getelementptr inbounds [[STRUCT_KMP_DEPEND_INFO]], %struct.kmp_depend_info* [[TMP15]], i32 0, i32 0
@@ -214,6 +85,6 @@ void test1() {
 // CHECK-NEXT:    store i64 2, i64* [[DEP_COUNTER_ADDR6]], align 8
 // CHECK-NEXT:    [[TMP25:%.*]] = bitcast %struct.kmp_depend_info* [[TMP14]] to i8*
 // CHECK-NEXT:    [[OMP_GLOBAL_THREAD_NUM7:%.*]] = call i32 @__kmpc_global_thread_num(%struct.ident_t* @[[GLOB1]])
-// CHECK-NEXT:    call void @__kmpc_interop_destroy(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM7]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP25]], i32 0)
+// CHECK-NEXT:    call void @__tgt_interop_destroy(%struct.ident_t* @[[GLOB1]], i32 [[OMP_GLOBAL_THREAD_NUM7]], i8** [[INTEROP]], i32 -1, i32 2, i8* [[TMP25]], i32 0)
 // CHECK-NEXT:    ret void
 //
