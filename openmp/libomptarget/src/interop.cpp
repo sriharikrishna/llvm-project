@@ -10,7 +10,7 @@
 #include "private.h"
 
 namespace {
-static omp_interop_rc_t
+omp_interop_rc_t
 __tgt_interop_get_property_err_type(omp_interop_property_t property) {
   switch (property) {
   case omp_ipr_fr_id:
@@ -35,13 +35,13 @@ __tgt_interop_get_property_err_type(omp_interop_property_t property) {
   return omp_irc_no_value;
 }
 
-static void __tgt_interop_type_mismatch(omp_interop_property_t property,
+void __tgt_interop_type_mismatch(omp_interop_property_t property,
                                          int *err) {
   if (err)
     *err = __tgt_interop_get_property_err_type(property);
 }
 
-static const char *__tgt_interop_vendor_id_to_str(intptr_t vendor_id) {
+const char *__tgt_interop_vendor_id_to_str(intptr_t vendor_id) {
   switch(vendor_id){
     case 1:
       return ("cuda");
@@ -61,7 +61,7 @@ static const char *__tgt_interop_vendor_id_to_str(intptr_t vendor_id) {
 }
 
 template <typename PropertyTy>
-static PropertyTy __tgt_interop_get_property(omp_interop_val_t &interop_val,
+PropertyTy __tgt_interop_get_property(omp_interop_val_t &interop_val,
                                               omp_interop_property_t property,
                                               int *err);
 
@@ -119,7 +119,7 @@ void *__tgt_interop_get_property<void *>(omp_interop_val_t &interop_val,
   return nullptr;
 }
 
-static bool __tgt_interop_get_property_check(omp_interop_val_t **interop_ptr,
+bool __tgt_interop_get_property_check(omp_interop_val_t **interop_ptr,
                                               omp_interop_property_t property,
                                               int *err) {
   if (err)
@@ -191,7 +191,7 @@ typedef int64_t kmp_int64;
 #ifdef __cplusplus
  extern "C" {
 #endif
-void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
+void __tgt_interop_init(ident_t *loc_ref, kmp_int32 gtid,
                          omp_interop_val_t *&interop_ptr,
                          kmp_interop_type_t interop_type  ,kmp_int32 device_id,
                          kmp_int64 ndeps, kmp_depend_info_t *dep_list, kmp_int32 have_nowait) {
@@ -231,7 +231,7 @@ void __kmpc_interop_init(ident_t *loc_ref, kmp_int32 gtid,
   }
 }
 
-void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
+void __tgt_interop_use(ident_t *loc_ref, kmp_int32 gtid,
                             omp_interop_val_t *interop_ptr,
                             kmp_int32 device_id, kmp_int32 ndeps,
                             kmp_depend_info_t *dep_list, kmp_int32 have_nowait) {
@@ -250,7 +250,7 @@ void __kmpc_interop_use(ident_t *loc_ref, kmp_int32 gtid,
   }
 }
 
-void __kmpc_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
+void __tgt_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
                             omp_interop_val_t *&interop_ptr,
                             kmp_int32 device_id, kmp_int32 ndeps,
                             kmp_depend_info_t *dep_list, kmp_int32 have_nowait) {
