@@ -1497,11 +1497,9 @@ int FTN_STDCALL FTN_GET_NUM_INTEROP_PROPERTIES(const omp_interop_t interop) {
   return 0;
 #else 
   int (*fptr)(const omp_interop_t);
-  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_num_interop_properties"))) {
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_num_interop_properties")))
     return (*fptr)(interop);
-  } else { // liboffload & libomptarget don't exist
-    return 0;
-  }
+  return 0;
 #endif // KMP_MIC || KMP_OS_DARWIN || KMP_OS_WINDOWS || defined(KMP_STUB)
 }	
 
@@ -1511,11 +1509,9 @@ intptr_t FTN_STDCALL FTN_GET_INTEROP_INT(const omp_interop_t interop,
                                  omp_interop_property_t property_id,
                                  int *err) {
   intptr_t (*fptr)(const omp_interop_t, omp_interop_property_t, int*);
-  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_int"))) {
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_int")))
     return (*fptr)(interop, property_id, err);
-  } else { // liboffload & libomptarget don't exist
-    return 0;
-  }
+  return 0;
 }	
 
 // libomptarget, if loaded, provides this function
@@ -1523,11 +1519,9 @@ void * FTN_STDCALL FTN_GET_INTEROP_PTR(const omp_interop_t interop,
                                  omp_interop_property_t property_id,
                                  int *err) {
   void * (*fptr)(const omp_interop_t, omp_interop_property_t, int*);
-  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_ptr"))) {
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_ptr")))
     return (*fptr)(interop, property_id, err);
-  } else { // liboffload & libomptarget don't exist
-    return (void * ) 0;
-  }
+  return nullptr;
 }
 
 // libomptarget, if loaded, provides this function
@@ -1535,44 +1529,36 @@ const char * FTN_STDCALL FTN_GET_INTEROP_STR(const omp_interop_t interop,
                                  omp_interop_property_t property_id,
                                  int *err) {
   const char * (*fptr)(const omp_interop_t, omp_interop_property_t, int*);
-  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_str"))) {
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_str")))
     return (*fptr)(interop, property_id, err);
-  } else { // liboffload & libomptarget don't exist
-    return (const char *)0;
-  }
+  return nullptr;
 }
 
 // libomptarget, if loaded, provides this function
 const char * FTN_STDCALL FTN_GET_INTEROP_NAME(const omp_interop_t interop,
                                  omp_interop_property_t property_id) {
   const char * (*fptr)(const omp_interop_t, omp_interop_property_t);
-  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_name"))) {
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_name")))
     return (*fptr)(interop, property_id);
-  } else { // liboffload & libomptarget don't exist
-    return (const char *)0;
-  }
+  return nullptr;
 }
 
 // libomptarget, if loaded, provides this function
 const char * FTN_STDCALL FTN_GET_INTEROP_TYPE_DESC(const omp_interop_t interop,
                                  omp_interop_property_t property_id) {
   const char * (*fptr)(const omp_interop_t, omp_interop_property_t);
-  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_type_desc"))) {
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_type_desc")))
     return (*fptr)(interop, property_id);
-  } else { // liboffload & libomptarget don't exist
-    return (const char *)0;
-  }
+  return nullptr;
 }
 
 // libomptarget, if loaded, provides this function
 const char * FTN_STDCALL FTN_GET_INTEROP_RC_DESC(const omp_interop_t interop,
                                  omp_interop_property_t property_id) {
   const char * (*fptr)(const omp_interop_t, omp_interop_property_t);
-  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_rec_desc"))) {
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_rec_desc")))
     return (*fptr)(interop, property_id);
-  } else { // liboffload & libomptarget don't exist
-    return (const char *)0;
-  }
+  return nullptr;
 }
 
 
