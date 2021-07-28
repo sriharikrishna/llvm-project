@@ -11,7 +11,7 @@
 
 namespace {
 omp_interop_rc_t
-__tgt_interop_get_property_err_type(omp_interop_property_t property) {
+getPropertyErrorType(omp_interop_property_t property) {
   switch (property) {
   case omp_ipr_fr_id:
     return omp_irc_type_int;
@@ -35,13 +35,13 @@ __tgt_interop_get_property_err_type(omp_interop_property_t property) {
   return omp_irc_no_value;
 }
 
-void __tgt_interop_type_mismatch(omp_interop_property_t property,
+void getTypeMismatch(omp_interop_property_t property,
                                          int *err) {
   if (err)
-    *err = __tgt_interop_get_property_err_type(property);
+    *err = getPropertyErrorType(property);
 }
 
-const char *__tgt_interop_vendor_id_to_str(intptr_t vendor_id) {
+const char *getVendorIdToStr(intptr_t vendor_id) {
   switch(vendor_id){
     case 1:
       return ("cuda");
@@ -61,12 +61,12 @@ const char *__tgt_interop_vendor_id_to_str(intptr_t vendor_id) {
 }
 
 template <typename PropertyTy>
-PropertyTy __tgt_interop_get_property(omp_interop_val_t &interop_val,
+PropertyTy getProperty(omp_interop_val_t &interop_val,
                                               omp_interop_property_t property,
                                               int *err);
 
 template <>
-intptr_t __tgt_interop_get_property<intptr_t>(omp_interop_val_t &interop_val,
+intptr_t getProperty<intptr_t>(omp_interop_val_t &interop_val,
                                                omp_interop_property_t property,
                                                int *err) {
   switch (property) {
@@ -79,27 +79,27 @@ intptr_t __tgt_interop_get_property<intptr_t>(omp_interop_val_t &interop_val,
   default:
     ;
   }
-  __tgt_interop_type_mismatch(property, err);
+  getTypeMismatch(property, err);
   return 0;
 }
 
 template <>
-const char *__tgt_interop_get_property<const char *>(
+const char *getProperty<const char *>(
     omp_interop_val_t &interop_val, omp_interop_property_t property, int *err) {
   switch (property) {
   case omp_ipr_fr_id:
     return interop_val.interop_type == kmp_interop_type_tasksync ? "tasksync"
                                                                  : "device+context";
   case omp_ipr_vendor_name:
-    return __tgt_interop_vendor_id_to_str(interop_val.vendor_id);
+    return getVendorIdToStr(interop_val.vendor_id);
   default:
-    __tgt_interop_type_mismatch(property, err);
+    getTypeMismatch(property, err);
     return nullptr;
   }
 }
 
 template <>
-void *__tgt_interop_get_property<void *>(omp_interop_val_t &interop_val,
+void *getProperty<void *>(omp_interop_val_t &interop_val,
                                           omp_interop_property_t property,
                                           int *err) {
   switch (property) {
@@ -115,11 +115,11 @@ void *__tgt_interop_get_property<void *>(omp_interop_val_t &interop_val,
   default:
     ;
   }
-  __tgt_interop_type_mismatch(property, err);
+  getTypeMismatch(property, err);
   return nullptr;
 }
 
-bool __tgt_interop_get_property_check(omp_interop_val_t **interop_ptr,
+bool getPropertyCheck(omp_interop_val_t **interop_ptr,
                                               omp_interop_property_t property,
                                               int *err) {
   if (err)
@@ -157,10 +157,10 @@ RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
                                  int *err) {                                   \
     omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
     assert((interop_val)->interop_type == kmp_interop_type_tasksync);\
-    if (!__tgt_interop_get_property_check(&interop_val, property_id, err)){    \
+    if (!getPropertyCheck(&interop_val, property_id, err)){    \
       return (RETURN_TYPE)(0);                                                 \
     }\
-    return __tgt_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
+    return getProperty<RETURN_TYPE>(*interop_val, property_id, \
                                                     err);                      \
 }
 __OMP_GET_INTEROP_TY(intptr_t, int)
@@ -174,11 +174,11 @@ RETURN_TYPE omp_get_interop_##SUFFIX(const omp_interop_t interop,              \
                                  omp_interop_property_t property_id) {         \
     int err;                                                                  \
     omp_interop_val_t *interop_val = (omp_interop_val_t*) interop;             \
-    if (!__tgt_interop_get_property_check(&interop_val, property_id, &err)){    \
+    if (!getPropertyCheck(&interop_val, property_id, &err)){    \
       return (RETURN_TYPE)(0); \
     }\
     return nullptr;\
-    return __tgt_interop_get_property<RETURN_TYPE>(*interop_val, property_id, \
+    return getProperty<RETURN_TYPE>(*interop_val, property_id, \
                                                     &err);                      \
 }
 __OMP_GET_INTEROP_TY3(const char*, name)
