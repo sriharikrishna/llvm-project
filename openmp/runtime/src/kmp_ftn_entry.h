@@ -1490,60 +1490,94 @@ typedef enum omp_interop_fr {
 
 typedef void *omp_interop_t;
 
-// This function is defined in libomptarget. When libomptarget is not
-// loaded, we assume we are on the host and return 0.
-// Compiler/libomptarget will handle this if called inside target.
-int FTN_STDCALL FTN_GET_NUM_INTEROP_PROPERTIES(const omp_interop_t) {
+
+// libomptarget, if loaded, provides this function
+int FTN_STDCALL FTN_GET_NUM_INTEROP_PROPERTIES(const omp_interop_t interop) {
+ assert(0);
+#if KMP_MIC || KMP_OS_DARWIN || defined(KMP_STUB)
   return 0;
+#else 
+  int (*fptr)(const omp_interop_t);
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_num_interop_properties"))) {
+    return (*fptr)(interop);
+  } else { // liboffload & libomptarget don't exist
+    return 0;
+  }
+#endif // KMP_MIC || KMP_OS_DARWIN || KMP_OS_WINDOWS || defined(KMP_STUB)
 }	
 
-// This function is defined in libomptarget. When libomptarget is not
-// loaded, we assume we are on the host and return 0.
-// Compiler/libomptarget will handle this if called inside target.
-omp_intptr_t FTN_STDCALL FTN_GET_INTEROP_INT(const omp_interop_t,
-                                                       omp_interop_property_t property_id,
-                                                       int *err) {
-  return 0;
-}
-
-// This function is defined in libomptarget. When libomptarget is not
-// loaded, we assume we are on the host and return nullptr.
-// Compiler/libomptarget will handle this if called inside target.
-void * FTN_STDCALL FTN_GET_INTEROP_PTR(const omp_interop_t,
-                                                omp_interop_property_t property_id, int *err) {
-  return nullptr;
+///TODO Convert FTN_GET_INTEROP_XXX functions into a macro like interop.cpp
+// libomptarget, if loaded, provides this function
+intptr_t FTN_STDCALL FTN_GET_INTEROP_INT(const omp_interop_t interop,
+                                 omp_interop_property_t property_id,
+                                 int *err) {
+  intptr_t (*fptr)(const omp_interop_t, omp_interop_property_t, int*);
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_int"))) {
+    return (*fptr)(interop, property_id, err);
+  } else { // liboffload & libomptarget don't exist
+    return 0;
+  }
 }	
 
-// This function is defined in libomptarget. When libomptarget is not
-// loaded, we assume we are on the host and return nullptr.
-// Compiler/libomptarget will handle this if called inside target.
-const char *FTN_STDCALL FTN_GET_INTEROP_STR(const omp_interop_t,
-                                                      omp_interop_property_t property_id,
-                                                      int *err) {
-  return nullptr;
+// libomptarget, if loaded, provides this function
+void * FTN_STDCALL FTN_GET_INTEROP_PTR(const omp_interop_t interop,
+                                 omp_interop_property_t property_id,
+                                 int *err) {
+  void * (*fptr)(const omp_interop_t, omp_interop_property_t, int*);
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_ptr"))) {
+    return (*fptr)(interop, property_id, err);
+  } else { // liboffload & libomptarget don't exist
+    return (void * ) 0;
+  }
 }
 
-// This function is defined in libomptarget. When libomptarget is not
-// loaded, we assume we are on the host and return nullptr.
-// Compiler/libomptarget will handle this if called inside target.
-const char * FTN_STDCALL FTN_GET_INTEROP_NAME(const omp_interop_t,
-                                                       omp_interop_property_t property_id) { 
-  return nullptr;
+// libomptarget, if loaded, provides this function
+const char * FTN_STDCALL FTN_GET_INTEROP_STR(const omp_interop_t interop,
+                                 omp_interop_property_t property_id,
+                                 int *err) {
+  const char * (*fptr)(const omp_interop_t, omp_interop_property_t, int*);
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_str"))) {
+    return (*fptr)(interop, property_id, err);
+  } else { // liboffload & libomptarget don't exist
+    return (const char *)0;
+  }
 }
 
-// This function is defined in libomptarget. When libomptarget is not
-// loaded, we assume we are on the host and return nullptr.
-// Compiler/libomptarget will handle this if called inside target.
-const char * FTN_STDCALL FTN_GET_INTEROP_TYPE_DESC(const omp_interop_t, omp_interop_property_t property_id) {
-  return nullptr;
+// libomptarget, if loaded, provides this function
+const char * FTN_STDCALL FTN_GET_INTEROP_NAME(const omp_interop_t interop,
+                                 omp_interop_property_t property_id) {
+  const char * (*fptr)(const omp_interop_t, omp_interop_property_t);
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_name"))) {
+    return (*fptr)(interop, property_id);
+  } else { // liboffload & libomptarget don't exist
+    return (const char *)0;
+  }
 }
 
-// This function is defined in libomptarget. When libomptarget is not
-// loaded, we assume we are on the host and return nullptr.
-// Compiler/libomptarget will handle this if called inside target.
-const char * FTN_STDCALL FTN_GET_INTEROP_RC_DESC(const omp_interop_t, omp_interop_rc_t property_id) {
-  return nullptr;
+// libomptarget, if loaded, provides this function
+const char * FTN_STDCALL FTN_GET_INTEROP_TYPE_DESC(const omp_interop_t interop,
+                                 omp_interop_property_t property_id) {
+  const char * (*fptr)(const omp_interop_t, omp_interop_property_t);
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_type_desc"))) {
+    return (*fptr)(interop, property_id);
+  } else { // liboffload & libomptarget don't exist
+    return (const char *)0;
+  }
 }
+
+// libomptarget, if loaded, provides this function
+const char * FTN_STDCALL FTN_GET_INTEROP_RC_DESC(const omp_interop_t interop,
+                                 omp_interop_property_t property_id) {
+  const char * (*fptr)(const omp_interop_t, omp_interop_property_t);
+  if ((*(void **)(&fptr) = KMP_DLSYM_NEXT("omp_get_interop_rec_desc"))) {
+    return (*fptr)(interop, property_id);
+  } else { // liboffload & libomptarget don't exist
+    return (const char *)0;
+  }
+}
+
+
+
 
 // display environment variables when requested
 void FTN_STDCALL FTN_DISPLAY_ENV(int verbose) {
