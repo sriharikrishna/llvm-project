@@ -1493,7 +1493,6 @@ typedef void *omp_interop_t;
 
 // libomptarget, if loaded, provides this function
 int FTN_STDCALL FTN_GET_NUM_INTEROP_PROPERTIES(const omp_interop_t interop) {
- assert(0);
 #if KMP_MIC || KMP_OS_DARWIN || defined(KMP_STUB)
   return 0;
 #else 
