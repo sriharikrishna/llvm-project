@@ -2187,7 +2187,7 @@ CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc,
   Value *Ident = getOrCreateIdent(SrcLocStr);
   Value *ThreadId = getOrCreateThreadID(Ident);
   if (Device == NULL)
-    Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
+    Device = ConstantInt::get(Int32, -1);
   Constant *InteropTypeVal =
       ConstantInt::get(Int64, (int)InteropType);
   if (NumDependences == nullptr) {
@@ -2196,7 +2196,7 @@ CallInst *OpenMPIRBuilder::createOMPInteropInit(const LocationDescription &Loc,
     DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
   Value *HaveNowaitClauseVal =
-      ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
+      ConstantInt::get(Int32, HaveNowaitClause);
   Value *Args[] = {
       Ident,  ThreadId,       InteropVar,        InteropTypeVal,
       Device, NumDependences, DependenceAddress, HaveNowaitClauseVal};
@@ -2217,14 +2217,14 @@ CallInst *OpenMPIRBuilder::createOMPInteropDestroy(
   Value *Ident = getOrCreateIdent(SrcLocStr);
   Value *ThreadId = getOrCreateThreadID(Ident);
   if (Device == NULL)
-    Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
+    Device = ConstantInt::get(Int32, -1);
   if (NumDependences == nullptr) {
     NumDependences = ConstantInt::get(Int32, 0);
     PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
     DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
   Value *HaveNowaitClauseVal =
-      ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
+      ConstantInt::get(Int32, HaveNowaitClause);
   Value *Args[] = {
       Ident,          ThreadId,          InteropVar,         Device,
       NumDependences, DependenceAddress, HaveNowaitClauseVal};
@@ -2246,14 +2246,14 @@ CallInst *OpenMPIRBuilder::createOMPInteropUse(const LocationDescription &Loc,
   Value *Ident = getOrCreateIdent(SrcLocStr);
   Value *ThreadId = getOrCreateThreadID(Ident);
   if (Device == NULL)
-    Device = ConstantInt::get(M.getContext(), APInt(32, -1, true));
+    Device = ConstantInt::get(Int32, -1);
   if (NumDependences == nullptr) {
     NumDependences = ConstantInt::get(Int32, 0);
     PointerType *PointerTypeVar = Type::getInt8PtrTy(M.getContext());
     DependenceAddress = ConstantPointerNull::get(PointerTypeVar);
   }
   Value *HaveNowaitClauseVal =
-      ConstantInt::get(M.getContext(), APInt(32, HaveNowaitClause, true));
+      ConstantInt::get(Int32, HaveNowaitClause);
   Value *Args[] = {
       Ident,          ThreadId,          InteropVar,         Device,
       NumDependences, DependenceAddress, HaveNowaitClauseVal};
