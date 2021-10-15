@@ -239,6 +239,9 @@ void __tgt_interop_use(ident_t *loc_ref, kmp_int32 gtid,
   kmp_depend_info_t *noalias_dep_list = NULL;
   assert(interop_ptr && "Cannot use nullptr!");
   omp_interop_val_t *interop_val = interop_ptr;
+  if (device_id == -1){
+    device_id = omp_get_default_device();
+  }
   assert(interop_val != omp_interop_none &&
          "Cannot use uninitialized interop_ptr!");
   assert((device_id == -1 || interop_val->device_id == device_id) &&
@@ -258,6 +261,9 @@ void __tgt_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
   kmp_depend_info_t *noalias_dep_list = NULL;	
   assert(interop_ptr && "Cannot use nullptr!");
   omp_interop_val_t *interop_val = interop_ptr;
+  if (device_id == -1){
+    device_id = omp_get_default_device();
+  }
   
   if (interop_val == omp_interop_none)
     return;
