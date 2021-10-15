@@ -41,19 +41,19 @@ void getTypeMismatch(omp_interop_property_t property,
     *err = getPropertyErrorType(property);
 }
 
-const char *getVendorIdToStr(intptr_t vendor_id) {
-  switch(vendor_id){
-    case 1:
+const char *getVendorIdToStr(const omp_foreign_runtime_ids_t VendorId) {
+  switch(VendorId){
+    case cuda:
       return ("cuda");
-    case 2: 
+    case cuda_driver: 
       return ("cuda_driver");
-    case 3: 
+    case opencl: 
       return ("opencl");
-    case 4: 
+    case sycl: 
       return ("sycl");
-    case 5: 
+    case hip: 
       return ("hip");
-    case 6: 
+    case level_zero: 
       return ("level_zero");
     default: 
       return("unknown");

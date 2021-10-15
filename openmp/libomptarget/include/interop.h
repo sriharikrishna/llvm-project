@@ -137,6 +137,16 @@ typedef enum kmp_interop_type_t {
   kmp_interop_type_device,
   kmp_interop_type_tasksync,
 } kmp_interop_type_t;
+    
+typedef enum omp_foreign_runtime_ids {
+        cuda = 1,
+        cuda_driver = 2,
+        opencl = 3,
+        sycl = 4,
+        hip = 5,
+        level_zero = 6,
+    } omp_foreign_runtime_ids_t;
+
 
 /// The interop value type, aka. the interop object.
 typedef struct omp_interop_val_t {
@@ -149,7 +159,7 @@ typedef struct omp_interop_val_t {
   __tgt_device_info device_info;
   const kmp_interop_type_t interop_type;
   const intptr_t device_id;
-  const intptr_t vendor_id = 1; // LLVM?
+  const omp_foreign_runtime_ids_t vendor_id = cuda;
   const intptr_t backend_type_id = omp_interop_backend_type_cuda_1;
 } omp_interop_val_t;
 
