@@ -11,8 +11,8 @@
 
 namespace {
 omp_interop_rc_t
-getPropertyErrorType(omp_interop_property_t property) {
-  switch (property) {
+getPropertyErrorType(omp_interop_property_t Property) {
+  switch (Property) {
   case omp_ipr_fr_id:
     return omp_irc_type_int;
   case omp_ipr_fr_name:
@@ -35,10 +35,10 @@ getPropertyErrorType(omp_interop_property_t property) {
   return omp_irc_no_value;
 }
 
-void getTypeMismatch(omp_interop_property_t property,
-                                         int *err) {
-  if (err)
-    *err = getPropertyErrorType(property);
+void getTypeMismatch(omp_interop_property_t Property,
+                                         int *Err) {
+  if (Err)
+    *Err = getPropertyErrorType(Property);
 }
 
 const char *getVendorIdToStr(const omp_foreign_runtime_ids_t VendorId) {
@@ -61,9 +61,9 @@ const char *getVendorIdToStr(const omp_foreign_runtime_ids_t VendorId) {
 }
 
 template <typename PropertyTy>
-PropertyTy getProperty(omp_interop_val_t &interop_val,
-                                              omp_interop_property_t property,
-                                              int *err);
+PropertyTy getProperty(omp_interop_val_t &InteropVal,
+                                              omp_interop_property_t Property,
+                                              int *Err);
 
 template <>
 intptr_t getProperty<intptr_t>(omp_interop_val_t &interop_val,
