@@ -231,7 +231,7 @@ void __tgt_interop_init(ident_t *loc_ref, kmp_int32 gtid,
 }
 
 void __tgt_interop_use(ident_t *loc_ref, kmp_int32 gtid,
-                            omp_interop_val_t *interop_ptr,
+                            omp_interop_val_t *&interop_ptr,
                             kmp_int32 device_id, kmp_int32 ndeps,
                             kmp_depend_info_t *dep_list, kmp_int32 have_nowait) {
   kmp_int32 ndeps_noalias = 0;
@@ -245,6 +245,11 @@ void __tgt_interop_use(ident_t *loc_ref, kmp_int32 gtid,
          "Cannot use uninitialized interop_ptr!");
   assert((device_id == -1 || interop_val->device_id == device_id) &&
          "Inconsistent device-id usage!");
+
+  if (!device_is_ready(device_id)) {
+    interop_ptr->err_str = "Device not ready!";
+    return;
+  }
 
   if (interop_val->interop_type == kmp_interop_type_tasksync) {
     __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
@@ -269,6 +274,10 @@ void __tgt_interop_destroy(ident_t *loc_ref, kmp_int32 gtid,
 
   assert((device_id == -1 || interop_val->device_id == device_id) &&
          "Inconsistent device-id usage!");
+  if (!device_is_ready(device_id)) {
+    interop_ptr->err_str = "Device not ready!";
+    return;
+  }
 
   if (interop_val->interop_type == kmp_interop_type_tasksync) {
      __kmpc_omp_wait_deps(loc_ref, gtid, ndeps, dep_list, ndeps_noalias,
