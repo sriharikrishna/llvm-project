@@ -55,9 +55,8 @@ const char *getVendorIdToStr(const omp_foreign_runtime_ids_t VendorId) {
       return ("hip");
     case level_zero: 
       return ("level_zero");
-    default: 
-      return("unknown");
   }
+  return("unknown");
 }
 
 template <typename PropertyTy>
