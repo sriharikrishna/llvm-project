@@ -227,6 +227,8 @@ void __tgt_interop_init(ident_t *loc_ref, kmp_int32 gtid,
       interop_ptr = omp_interop_none;
     }
   }
+  //TODO Flush the queue associated with the interop through the plugin
+  //TODO Signal out dependences
 }
 
 void __tgt_interop_use(ident_t *loc_ref, kmp_int32 gtid,
